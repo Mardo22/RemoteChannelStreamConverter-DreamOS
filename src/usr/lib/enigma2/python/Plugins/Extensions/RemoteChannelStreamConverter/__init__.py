@@ -1,0 +1,215 @@
+# -*- coding: utf-8 -*-
+#
+# Remote channel stream converter for DreamOS - https://www.youtube.com/@SetTvBox4U
+# Copyright (C) the original authors of the Enigma2 plugin "Remote channel stream converter"
+#   (OpenPLi / E2OpenPlugins / OE-Alliance contributors)
+# Modifications for DreamOS 4.5 / 5.0 (versions 1.1 - 1.6, since 21.10.2026):
+#   Copyright (C) 2026 Mardo22 (SetTvBox4U)
+#
+# This program is free software: you can redistribute it and/or modify it under the terms of
+# the GNU General Public License as published by the Free Software Foundation, version 3.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details: https://www.gnu.org/licenses/gpl-3.0.html
+#
+# Remote channel stream converter 1.6 for DreamOS 4.5 and 5.0 - translations (en / sk / cs)
+from Components.config import config
+
+TRANSLATIONS = {
+	"sk": {
+		"Updated and extended version of the open-source Enigma2 plugin \"Remote channel stream converter\" for DreamOS 4.5 and 5.0.": "Aktualizovaná a rozšírená verzia open-source pluginu Enigma2 \"Remote channel stream converter\" pre DreamOS 4.5 a 5.0.",
+		"Original plugin published by: OpenPLi, E2OpenPlugins, OE-Alliance": "Pôvodný plugin zverejnili: OpenPLi, E2OpenPlugins, OE-Alliance",
+		"License: GPL-3.0": "Licencia: GPL-3.0",
+		"About": "O plugine",
+		"Use StreamRelay of the server": "Použiť StreamRelay servera",
+		"Channels in the StreamRelay list of the server (whitelist_streamrelay) are decrypted by the server and streamed on its StreamRelay port.": "Kanály zo zoznamu StreamRelay servera (whitelist_streamrelay) server sám dešifruje a posiela cez port StreamRelay.",
+		"StreamRelay port": "Port StreamRelay",
+		"StreamRelay port of the server, usually 17999.": "Port StreamRelay na serveri, zvyčajne 17999.",
+		"StreamRelay: %d channels": "StreamRelay: %d kanálov",
+		"Copy IPTV channels (internet links)": "Kopírovať IPTV kanály (internetové linky)",
+		"IPTV channels of the server are copied with their original internet links - the Dreambox plays them directly from the internet.": "IPTV kanály servera sa skopírujú s pôvodnými internetovými linkami – Dreambox ich hrá priamo z internetu.",
+		"Remote channel stream converter for %s": "Remote channel stream converter pre %s",
+		"Updated by %s since %s": "Aktualizoval %s od %s",
+		"Based on the OpenPLi plugin Remote channel stream converter (GPL).": "Založené na plugine OpenPLi Remote channel stream converter (GPL).",
+		"Converts bouquets of another Enigma2 receiver (server) into stream bouquets, so that the Dreambox uses the tuners of the server.": "Prevedie bukety iného prijímača Enigma2 (servera) na stream bukety, takže Dreambox používa tunery servera.",
+		"Version %s  ·  updated %s": "Verzia %s  ·  aktualizované %s",
+		"Remote channel stream converter": "Remote channel stream converter",
+		"Convert remote channel list for streaming": "Prevod zoznamu kanálov zo servera na stream",
+		"Close": "Zavrieť",
+		"Convert": "Previesť",
+		"Settings": "Nastavenia",
+		"Invert": "Invertovať",
+		"Save": "Uložiť",
+		"Cancel": "Zrušiť",
+		"Server": "Server",
+		"Selected bouquet": "Vybraný buket",
+		"channels": "kanálov",
+		"converted": "prevedený",
+		"not converted": "neprevedený",
+		"Set the server IP first (yellow button).": "Najprv nastav IP servera (žlté tlačidlo).",
+		"Connecting to %s ...": "Pripájam sa na %s ...",
+		"Could not connect to %s": "Nepodarilo sa pripojiť na %s",
+		"Reading bouquets %d of %d": "Načítavam bukety %d z %d",
+		"Reading alternatives %d of %d": "Načítavam alternatívy %d z %d",
+		"Download from server failed": "Sťahovanie zo servera zlyhalo",
+		"OK = select   MENU = options": "OK = označiť   MENU = možnosti",
+		"%d bouquets on server, %d converted": "Na serveri %d buketov, prevedených %d",
+		"No bouquets selected": "Nie je označený žiadny buket",
+		"Converting %d bouquets ...": "Prevádzam %d buketov ...",
+		"Creating backup ...": "Vytváram zálohu ...",
+		"Done: %d bouquets, %d channels converted.": "Hotovo: prevedených %d buketov, %d kanálov.",
+		"Conversion failed": "Prevod zlyhal",
+		"Options": "Možnosti",
+		"Update all converted bouquets (%d)": "Aktualizovať všetky prevedené bukety (%d)",
+		"Delete selected converted bouquets": "Vymazať označené prevedené bukety",
+		"Delete all converted bouquets of this server (%d)": "Vymazať všetky prevedené bukety tohto servera (%d)",
+		"Reload list from server": "Znovu načítať zoznam zo servera",
+		"Server settings": "Nastavenia servera",
+		"About": "O plugine",
+		"No converted bouquets.": "Žiadne prevedené bukety.",
+		"Really delete %d converted bouquets?": "Naozaj vymazať %d prevedených buketov?",
+		"Deleted %d bouquets.": "Vymazaných %d buketov.",
+		"Not found on server: %d": "Nenájdené na serveri: %d",
+		"Connection": "Pripojenie",
+		"OpenWebif (no password)": "OpenWebif (bez hesla)",
+		"FTP (with password)": "FTP (s heslom)",
+		"Server IP address": "IP adresa servera",
+		"OpenWebif port": "Port OpenWebif",
+		"OpenWebif user (optional)": "Meno OpenWebif (voliteľné)",
+		"OpenWebif password (optional)": "Heslo OpenWebif (voliteľné)",
+		"FTP user": "FTP meno",
+		"FTP password": "FTP heslo",
+		"FTP port": "FTP port",
+		"FTP passive mode": "FTP pasívny režim",
+		"Stream port": "Port streamu",
+		"Backup /etc/enigma2 before converting": "Zálohovať /etc/enigma2 pred prevodom",
+		"Merge server lamedb (names, providers)": "Zlúčiť lamedb zo servera (mená, poskytovatelia)",
+		"Plugin language": "Jazyk pluginu",
+		"auto": "automaticky",
+		"Keyboard": "Klávesnica",
+		"Server settings": "Nastavenia servera",
+		"OpenWebif needs no password if web authentication on the server is off.": "OpenWebif nepotrebuje heslo, ak má server vypnuté prihlasovanie do webového rozhrania.",
+		"FTP needs the root password of the server.": "FTP potrebuje heslo používateľa root na serveri.",
+		"Port of the server's stream (OpenWebif/streamserver), usually 8001.": "Port streamu na serveri, zvyčajne 8001.",
+		"Backup to /media/hdd/rcsc-backup (last 3 are kept).": "Záloha do /media/hdd/rcsc-backup (ponechajú sa posledné 3).",
+		"Adds the server's services to the local lamedb without duplicates.": "Pridá služby servera do lokálnej lamedb bez duplicít.",
+		"Server is in standby - tuner is free.": "Server je v standby – tuner je voľný.",
+		"Server is watching: %s": "Server pozerá: %s",
+		"Server busy tuners: %s": "Obsadené tunery servera: %s",
+		"Tip: if the server has only one tuner configured, the Dreambox plays only channels of the transponder the server is on (or all, when the server is in standby).": "Tip: ak má server nastavený len jeden tuner, Dreambox hrá iba kanály z transpondéra, na ktorom je server (alebo všetky, keď je server v standby).",
+		"Server status unknown (OpenWebif not reachable).": "Stav servera neznámy (OpenWebif nedostupný).",
+		"Satellites": "Družice",
+		"Status": "Stav",
+		"File": "Súbor",
+		"Backup failed: %s": "Záloha zlyhala: %s",
+		"Backup: %s": "Záloha: %s",
+		"Bouquet with the same name is replaced, other bouquets stay.": "Buket s rovnakým názvom sa nahradí, ostatné bukety zostanú.",
+	},
+	"cs": {
+		"Updated and extended version of the open-source Enigma2 plugin \"Remote channel stream converter\" for DreamOS 4.5 and 5.0.": "Aktualizovaná a rozšířená verze open-source pluginu Enigma2 \"Remote channel stream converter\" pro DreamOS 4.5 a 5.0.",
+		"Original plugin published by: OpenPLi, E2OpenPlugins, OE-Alliance": "Původní plugin zveřejnili: OpenPLi, E2OpenPlugins, OE-Alliance",
+		"License: GPL-3.0": "Licence: GPL-3.0",
+		"Use StreamRelay of the server": "Použít StreamRelay serveru",
+		"Channels in the StreamRelay list of the server (whitelist_streamrelay) are decrypted by the server and streamed on its StreamRelay port.": "Kanály ze seznamu StreamRelay serveru (whitelist_streamrelay) server sám dešifruje a posílá přes port StreamRelay.",
+		"StreamRelay port": "Port StreamRelay",
+		"StreamRelay port of the server, usually 17999.": "Port StreamRelay na serveru, obvykle 17999.",
+		"StreamRelay: %d channels": "StreamRelay: %d kanálů",
+		"Copy IPTV channels (internet links)": "Kopírovat IPTV kanály (internetové odkazy)",
+		"IPTV channels of the server are copied with their original internet links - the Dreambox plays them directly from the internet.": "IPTV kanály serveru se zkopírují s původními internetovými odkazy – Dreambox je hraje přímo z internetu.",
+		"Remote channel stream converter for %s": "Remote channel stream converter pro %s",
+		"Updated by %s since %s": "Aktualizoval %s od %s",
+		"Based on the OpenPLi plugin Remote channel stream converter (GPL).": "Založeno na pluginu OpenPLi Remote channel stream converter (GPL).",
+		"Converts bouquets of another Enigma2 receiver (server) into stream bouquets, so that the Dreambox uses the tuners of the server.": "Převede bukety jiného přijímače Enigma2 (serveru) na stream bukety, takže Dreambox používá tunery serveru.",
+		"Version %s  ·  updated %s": "Verze %s  ·  aktualizováno %s",
+		"Convert remote channel list for streaming": "Převod seznamu kanálů ze serveru na stream",
+		"Close": "Zavřít",
+		"Convert": "Převést",
+		"Settings": "Nastavení",
+		"Invert": "Invertovat",
+		"Save": "Uložit",
+		"Cancel": "Zrušit",
+		"Server": "Server",
+		"Selected bouquet": "Vybraný buket",
+		"channels": "kanálů",
+		"converted": "převedený",
+		"not converted": "nepřevedený",
+		"Set the server IP first (yellow button).": "Nejprve nastav IP serveru (žluté tlačítko).",
+		"Connecting to %s ...": "Připojuji se k %s ...",
+		"Could not connect to %s": "Nepodařilo se připojit k %s",
+		"Reading bouquets %d of %d": "Načítám bukety %d z %d",
+		"Reading alternatives %d of %d": "Načítám alternativy %d z %d",
+		"Download from server failed": "Stahování ze serveru selhalo",
+		"OK = select   MENU = options": "OK = označit   MENU = možnosti",
+		"%d bouquets on server, %d converted": "Na serveru %d buketů, převedeno %d",
+		"No bouquets selected": "Není označen žádný buket",
+		"Converting %d bouquets ...": "Převádím %d buketů ...",
+		"Creating backup ...": "Vytvářím zálohu ...",
+		"Done: %d bouquets, %d channels converted.": "Hotovo: převedeno %d buketů, %d kanálů.",
+		"Conversion failed": "Převod selhal",
+		"Options": "Možnosti",
+		"Update all converted bouquets (%d)": "Aktualizovat všechny převedené bukety (%d)",
+		"Delete selected converted bouquets": "Smazat označené převedené bukety",
+		"Delete all converted bouquets of this server (%d)": "Smazat všechny převedené bukety tohoto serveru (%d)",
+		"Reload list from server": "Znovu načíst seznam ze serveru",
+		"Server settings": "Nastavení serveru",
+		"About": "O pluginu",
+		"No converted bouquets.": "Žádné převedené bukety.",
+		"Really delete %d converted bouquets?": "Opravdu smazat %d převedených buketů?",
+		"Deleted %d bouquets.": "Smazáno %d buketů.",
+		"Not found on server: %d": "Nenalezeno na serveru: %d",
+		"Connection": "Připojení",
+		"OpenWebif (no password)": "OpenWebif (bez hesla)",
+		"FTP (with password)": "FTP (s heslem)",
+		"Server IP address": "IP adresa serveru",
+		"OpenWebif port": "Port OpenWebif",
+		"OpenWebif user (optional)": "Jméno OpenWebif (volitelné)",
+		"OpenWebif password (optional)": "Heslo OpenWebif (volitelné)",
+		"FTP user": "FTP jméno",
+		"FTP password": "FTP heslo",
+		"FTP port": "FTP port",
+		"FTP passive mode": "FTP pasivní režim",
+		"Stream port": "Port streamu",
+		"Backup /etc/enigma2 before converting": "Zálohovat /etc/enigma2 před převodem",
+		"Merge server lamedb (names, providers)": "Sloučit lamedb ze serveru (názvy, poskytovatelé)",
+		"Plugin language": "Jazyk pluginu",
+		"auto": "automaticky",
+		"Keyboard": "Klávesnice",
+		"OpenWebif needs no password if web authentication on the server is off.": "OpenWebif nepotřebuje heslo, pokud má server vypnuté přihlašování do webového rozhraní.",
+		"FTP needs the root password of the server.": "FTP potřebuje heslo uživatele root na serveru.",
+		"Port of the server's stream (OpenWebif/streamserver), usually 8001.": "Port streamu na serveru, obvykle 8001.",
+		"Backup to /media/hdd/rcsc-backup (last 3 are kept).": "Záloha do /media/hdd/rcsc-backup (ponechají se poslední 3).",
+		"Adds the server's services to the local lamedb without duplicates.": "Přidá služby serveru do lokální lamedb bez duplicit.",
+		"Server is in standby - tuner is free.": "Server je v pohotovosti – tuner je volný.",
+		"Server is watching: %s": "Server sleduje: %s",
+		"Server busy tuners: %s": "Obsazené tunery serveru: %s",
+		"Tip: if the server has only one tuner configured, the Dreambox plays only channels of the transponder the server is on (or all, when the server is in standby).": "Tip: pokud má server nastavený jen jeden tuner, Dreambox hraje jen kanály z transpondéru, na kterém je server (nebo všechny, když je server v pohotovosti).",
+		"Server status unknown (OpenWebif not reachable).": "Stav serveru neznámý (OpenWebif nedostupný).",
+		"Satellites": "Družice",
+		"Status": "Stav",
+		"File": "Soubor",
+		"Backup failed: %s": "Záloha selhala: %s",
+		"Backup: %s": "Záloha: %s",
+		"Bouquet with the same name is replaced, other bouquets stay.": "Buket se stejným názvem se nahradí, ostatní bukety zůstanou.",
+	},
+}
+
+
+def currentLanguage():
+	lang = "auto"
+	try:
+		lang = config.plugins.RemoteStreamConverter.language.value
+	except Exception:
+		pass
+	if lang == "auto":
+		try:
+			lang = config.osd.language.value[:2]
+		except Exception:
+			lang = "en"
+	return lang
+
+
+def _(txt):
+	table = TRANSLATIONS.get(currentLanguage())
+	if table:
+		return table.get(txt, txt)
+	return txt
