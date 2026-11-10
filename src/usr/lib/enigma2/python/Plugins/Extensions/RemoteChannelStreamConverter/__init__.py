@@ -3,7 +3,7 @@
 # Remote channel stream converter for DreamOS - https://www.youtube.com/@SetTvBox4U
 # Copyright (C) the original authors of the Enigma2 plugin "Remote channel stream converter"
 #   (OpenPLi / E2OpenPlugins / OE-Alliance contributors)
-# Modifications for DreamOS 4.5 / 5.0 (versions 1.1 - 1.6, since 21.10.2026):
+# Modifications for DreamOS 4.5 / 5.0 (versions 1.1 - 2.0, since 21.10.2026):
 #   Copyright (C) 2026 Mardo22 (SetTvBox4U)
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of
@@ -12,7 +12,7 @@
 # without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details: https://www.gnu.org/licenses/gpl-3.0.html
 #
-# Remote channel stream converter 1.6 for DreamOS 4.5 and 5.0 - translations (en / sk / cs)
+# Remote channel stream converter 2.0 for DreamOS 4.5 and 5.0 - translations (en / sk / cs)
 from Components.config import config
 
 TRANSLATIONS = {
@@ -104,6 +104,46 @@ TRANSLATIONS = {
 		"Backup failed: %s": "Záloha zlyhala: %s",
 		"Backup: %s": "Záloha: %s",
 		"Bouquet with the same name is replaced, other bouquets stay.": "Buket s rovnakým názvom sa nahradí, ostatné bukety zostanú.",
+		"Create picon links for the channels": "Vytvoriť odkazy na picony kanálov",
+		"After every conversion the plugin links the picons of the channels to the stream services, so that the channels of the server have logos. Own picon files are not changed.": "Po každom prevode plugin prepojí picony kanálov so stream službami, aby kanály zo servera mali logá. Vlastné súbory piconov sa nemenia.",
+		"Picon directory": "Adresár piconov",
+		"auto = picon directory of the skin / picon plugins (e.g. /data/picon, /media/hdd/picon, /usr/share/enigma2/picon).": "automaticky = adresár piconov skinu / pluginov piconov (napr. /data/picon, /media/hdd/picon, /usr/share/enigma2/picon).",
+		"Update picon links of the channels": "Aktualizovať odkazy na picony kanálov",
+		"Creating picon links ...": "Vytváram odkazy na picony ...",
+		"Picon links are off (settings).": "Odkazy na picony sú vypnuté (nastavenia).",
+		"Picon links failed: %s": "Odkazy na picony zlyhali: %s",
+		"Picon links removed: %d": "Odstránených odkazov na picony: %d",
+		"Picon links: %d, without picon: %d": "Odkazy na picony: %d, bez piconu: %d",
+		"Picons: %d links (%d new), %d own, %d without picon": "Picony: %d odkazov (%d nových), %d vlastných, %d bez piconu",
+		"Import missing picons from server": "Importovať chýbajúce picony zo servera",
+		"Update EPG from server": "Aktualizovať EPG zo servera",
+		"Start EPGImport now (all sources)": "Spustiť EPGImport teraz (všetky zdroje)",
+		"EPGImport is running - EPG comes in a few minutes.": "EPGImport beží – EPG bude o pár minút.",
+		"EPGImport could not be started (not installed or already running).": "EPGImport sa nedal spustiť (nie je nainštalovaný alebo už beží).",
+		"Updating EPG ...": "Aktualizujem EPG ...",
+		"EPG updated.": "EPG aktualizované.",
+		"EPG options are off (settings).": "Voľby EPG sú vypnuté (nastavenia).",
+		"EPG failed: %s": "EPG zlyhalo: %s",
+		"EPG: EPGImport is not installed.": "EPG: EPGImport nie je nainštalovaný.",
+		"EPG of the Dreambox: %d of %d channels mapped (after the next EPGImport run)": "EPG Dreamboxu: priradených %d z %d kanálov (po ďalšom behu EPGImport)",
+		"EPG from server: %d events for %d channels": "EPG zo servera: %d relácií pre %d kanálov",
+		"EPG from server: no new EPG (old data kept)": "EPG zo servera: žiadne nové EPG (staré ostáva)",
+		"EPGImport is importing the EPG of the server now.": "EPGImport teraz importuje EPG zo servera.",
+		"Picons: %d (server %d), without: %d": "Picony: %d (server %d), bez: %d",
+		"EPG of the Dreambox for the channels (EPGImport)": "EPG Dreamboxu pre kanály (EPGImport)",
+		"The XMLTV ids of your EPGImport sources are assigned to the channels of the server (own block in /etc/epgimport/custom.channels.xml). Channel references and numbers do not change. EPG after the next EPGImport run.": "Kanálom zo servera sa priradia XMLTV id tvojich zdrojov EPGImport (vlastný blok v /etc/epgimport/custom.channels.xml). Referencie ani čísla kanálov sa nemenia. EPG po ďalšom behu EPGImport.",
+		"EPG from server (only on demand)": "EPG zo servera (len na požiadanie)",
+		"With Update all / MENU 'Update EPG from server' the EPG of the server is taken for channels without EPG of the Dreambox. Nothing runs automatically; without EPG on the server old data stay.": "Pri Update all / MENU „Aktualizovať EPG zo servera“ sa pre kanály bez EPG Dreamboxu vezme EPG servera. Nič nebeží automaticky; ak server EPG nemá, staré ostáva.",
+		"Channels without a picon on the Dreambox get the picon of the server (OpenWebif). Existing picons are never replaced.": "Kanály bez piconu na Dreamboxe dostanú picon zo servera (OpenWebif). Existujúce picony sa nikdy neprepíšu.",
+		"Picon links: %d, from server: %d, without picon: %d": "Odkazy na picony: %d, zo servera: %d, bez piconu: %d",
+		"from server: %d (%d new)": "zo servera: %d (%d nových)",
+		"Show in plugin browser": "Zobraziť v zozname pluginov",
+		"Entry in the plugin browser (after GUI restart). Always in: Menu > Setup > Services and Recordings > Service Searching.": "Položka v zozname pluginov (po reštarte GUI). Vždy je aj v: Menu > Setup > Services and Recordings > Service Searching.",
+		"Show in extensions menu (blue button)": "Zobraziť v rozšíreniach (modré tlačidlo)",
+		"Quick start with the blue button in TV mode (after GUI restart).": "Rýchle spustenie modrým tlačidlom v TV režime (po reštarte GUI).",
+		"Show in main menu": "Zobraziť v hlavnom menu",
+		"Entry in the main menu (after GUI restart).": "Položka v hlavnom menu (po reštarte GUI).",
+		"The menu entries change after a GUI restart.": "Položky v menu sa zmenia po reštarte GUI.",
 	},
 	"cs": {
 		"Updated and extended version of the open-source Enigma2 plugin \"Remote channel stream converter\" for DreamOS 4.5 and 5.0.": "Aktualizovaná a rozšířená verze open-source pluginu Enigma2 \"Remote channel stream converter\" pro DreamOS 4.5 a 5.0.",
@@ -190,6 +230,46 @@ TRANSLATIONS = {
 		"Backup failed: %s": "Záloha selhala: %s",
 		"Backup: %s": "Záloha: %s",
 		"Bouquet with the same name is replaced, other bouquets stay.": "Buket se stejným názvem se nahradí, ostatní bukety zůstanou.",
+		"Create picon links for the channels": "Vytvořit odkazy na picony kanálů",
+		"After every conversion the plugin links the picons of the channels to the stream services, so that the channels of the server have logos. Own picon files are not changed.": "Po každém převodu plugin propojí picony kanálů se stream službami, aby kanály ze serveru měly loga. Vlastní soubory piconů se nemění.",
+		"Picon directory": "Adresář piconů",
+		"auto = picon directory of the skin / picon plugins (e.g. /data/picon, /media/hdd/picon, /usr/share/enigma2/picon).": "automaticky = adresář piconů skinu / pluginů piconů (např. /data/picon, /media/hdd/picon, /usr/share/enigma2/picon).",
+		"Update picon links of the channels": "Aktualizovat odkazy na picony kanálů",
+		"Creating picon links ...": "Vytvářím odkazy na picony ...",
+		"Picon links are off (settings).": "Odkazy na picony jsou vypnuté (nastavení).",
+		"Picon links failed: %s": "Odkazy na picony selhaly: %s",
+		"Picon links removed: %d": "Odstraněno odkazů na picony: %d",
+		"Picon links: %d, without picon: %d": "Odkazy na picony: %d, bez piconu: %d",
+		"Picons: %d links (%d new), %d own, %d without picon": "Picony: %d odkazů (%d nových), %d vlastních, %d bez piconu",
+		"Import missing picons from server": "Importovat chybějící picony ze serveru",
+		"Update EPG from server": "Aktualizovat EPG ze serveru",
+		"Start EPGImport now (all sources)": "Spustit EPGImport nyní (všechny zdroje)",
+		"EPGImport is running - EPG comes in a few minutes.": "EPGImport běží – EPG bude za pár minut.",
+		"EPGImport could not be started (not installed or already running).": "EPGImport nelze spustit (není nainstalován nebo už běží).",
+		"Updating EPG ...": "Aktualizuji EPG ...",
+		"EPG updated.": "EPG aktualizováno.",
+		"EPG options are off (settings).": "Volby EPG jsou vypnuté (nastavení).",
+		"EPG failed: %s": "EPG selhalo: %s",
+		"EPG: EPGImport is not installed.": "EPG: EPGImport není nainstalován.",
+		"EPG of the Dreambox: %d of %d channels mapped (after the next EPGImport run)": "EPG Dreamboxu: přiřazeno %d z %d kanálů (po dalším běhu EPGImport)",
+		"EPG from server: %d events for %d channels": "EPG ze serveru: %d pořadů pro %d kanálů",
+		"EPG from server: no new EPG (old data kept)": "EPG ze serveru: žádné nové EPG (staré zůstává)",
+		"EPGImport is importing the EPG of the server now.": "EPGImport nyní importuje EPG ze serveru.",
+		"Picons: %d (server %d), without: %d": "Picony: %d (server %d), bez: %d",
+		"EPG of the Dreambox for the channels (EPGImport)": "EPG Dreamboxu pro kanály (EPGImport)",
+		"The XMLTV ids of your EPGImport sources are assigned to the channels of the server (own block in /etc/epgimport/custom.channels.xml). Channel references and numbers do not change. EPG after the next EPGImport run.": "Kanálům ze serveru se přiřadí XMLTV id vašich zdrojů EPGImport (vlastní blok v /etc/epgimport/custom.channels.xml). Reference ani čísla kanálů se nemění. EPG po dalším běhu EPGImport.",
+		"EPG from server (only on demand)": "EPG ze serveru (jen na požádání)",
+		"With Update all / MENU 'Update EPG from server' the EPG of the server is taken for channels without EPG of the Dreambox. Nothing runs automatically; without EPG on the server old data stay.": "Při Update all / MENU „Aktualizovat EPG ze serveru“ se pro kanály bez EPG Dreamboxu vezme EPG serveru. Nic neběží automaticky; když server EPG nemá, staré zůstává.",
+		"Channels without a picon on the Dreambox get the picon of the server (OpenWebif). Existing picons are never replaced.": "Kanály bez piconu na Dreamboxu dostanou picon ze serveru (OpenWebif). Existující picony se nikdy nepřepíší.",
+		"Picon links: %d, from server: %d, without picon: %d": "Odkazy na picony: %d, ze serveru: %d, bez piconu: %d",
+		"from server: %d (%d new)": "ze serveru: %d (%d nových)",
+		"Show in plugin browser": "Zobrazit v seznamu pluginů",
+		"Entry in the plugin browser (after GUI restart). Always in: Menu > Setup > Services and Recordings > Service Searching.": "Položka v seznamu pluginů (po restartu GUI). Vždy je také v: Menu > Setup > Services and Recordings > Service Searching.",
+		"Show in extensions menu (blue button)": "Zobrazit v rozšířeních (modré tlačítko)",
+		"Quick start with the blue button in TV mode (after GUI restart).": "Rychlé spuštění modrým tlačítkem v TV režimu (po restartu GUI).",
+		"Show in main menu": "Zobrazit v hlavním menu",
+		"Entry in the main menu (after GUI restart).": "Položka v hlavním menu (po restartu GUI).",
+		"The menu entries change after a GUI restart.": "Položky v menu se změní po restartu GUI.",
 	},
 }
 

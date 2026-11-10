@@ -1,11 +1,11 @@
 Package: enigma2-plugins-remotechannelconverter-dreamos
-Version: 1.6
+Version: 2.0.2
 Section: misc
 Priority: optional
 Architecture: all
 Maintainer: Mardo22 (SetTvBox4U)
 Depends: enigma2
-Description: Remote channel stream converter 1.6 for DreamOS 4.5 and 5.0 (one package)
+Description: Remote channel stream converter 2.0.2 for DreamOS 4.5 and 5.0 (one package)
  Converts bouquets of another Enigma2 receiver into stream bouquets
- (OpenWebif without password or FTP with password), IPTV channels, StreamRelay.
+ (OpenWebif without password or FTP with password), IPTV channels, StreamRelay, picon links, picons and EPG mapping.
  Based on the OpenPLi / OE-Alliance plugin. License: GPL-3.0.

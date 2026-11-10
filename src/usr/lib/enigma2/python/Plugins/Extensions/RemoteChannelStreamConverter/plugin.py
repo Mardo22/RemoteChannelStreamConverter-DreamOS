@@ -3,7 +3,7 @@
 # Remote channel stream converter for DreamOS - https://www.youtube.com/@SetTvBox4U
 # Copyright (C) the original authors of the Enigma2 plugin "Remote channel stream converter"
 #   (OpenPLi / E2OpenPlugins / OE-Alliance contributors)
-# Modifications for DreamOS 4.5 / 5.0 (versions 1.1 - 1.6, since 21.10.2026):
+# Modifications for DreamOS 4.5 / 5.0 (versions 1.1 - 2.0, since 21.10.2026):
 #   Copyright (C) 2026 Mardo22 (SetTvBox4U)
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of
@@ -12,7 +12,7 @@
 # without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details: https://www.gnu.org/licenses/gpl-3.0.html
 #
-# Remote channel stream converter 1.6 for DreamOS 4.5 and 5.0 (one package, the system is detected at runtime)
+# Remote channel stream converter 2.0 for DreamOS 4.5 and 5.0 (one package, the system is detected at runtime)
 # Based on the OpenPLi plugin "Remote channel stream converter" (GPL).
 # 1.1: Full HD screen in the style of the DreamOS skin, menu in Service Searching (like "Tuners & Scanning"
 #      on OpenPLi/OE-A), OpenWebif download without password or FTP with password, update/delete of converted
@@ -26,6 +26,21 @@
 # 1.5 (22.10.2026): one package for DreamOS 4.5 and 5.0 - system detected from the enigma2 package version (title, About).
 # 1.6 (22.10.2026): StreamRelay - channels in the whitelist_streamrelay of the server (OE-A) are streamed on port 17999
 #      (decrypted by the server), option in the settings. Public release under GPL-3.0.
+# 1.7 (23.10.2026): bouquet counter fixed (same names counted once), no crash by late callbacks after closing.
+# 1.8 (05.11.2026): picon links - after every conversion, "Update all" and delete the plugin creates symlinks in the
+#      picon directory: <service of the stream>.png -> existing picon of the channel (server namespace, shortened
+#      namespace ns & 0xFFFF0000, service types 1/19/16/1F/D), so that the channels of the server have logos.
+# 1.9 (05.11.2026): missing picons are downloaded from the server (OpenWebif /api/getservices&picon=1, option),
+#      optional entries in the plugin browser, the extensions menu (blue button) and the main menu.
+# 2.0.2 (09.11.2026): short tip in the server panel (the long one was cut off at the bottom), message "Deleting ..."
+#   while the bouquets, picon links and EPG mapping are removed (before, the window did not change for ~45 s).
+# 2.0.1 (05.11.2026): EPG of the server only with Update all / MENU (Convert stays light), one settings window at the
+#   first start, "1 bouquet" singular. Found in the test on DreamOS 5.0 (Slot 0).
+# 2.0 (05.11.2026): EPG without changing references or channel numbers - (1) EPG the Dreambox already has: own block
+#      in /etc/epgimport/custom.channels.xml maps the XMLTV ids of the enabled EPGImport sources to the RCSC channels
+#      (EPGImport fills them at its next run, no dependence on the server); (2) EPG of the server (OpenWebif) only on
+#      demand (MENU "Update EPG from server", option) for the channels without (1), imported at once by EPGImport
+#      (only the RCSC source). See epgmap.py.
 from __future__ import absolute_import
 import os
 import re
@@ -56,9 +71,10 @@ from twisted.internet import threads
 
 from . import _
 from .FTPDownloader import FTPDownloader
+from . import epgmap
 
-VERSION = "1.6"
-VERSION_DATE = "22.10.2026"
+VERSION = "2.0.2"
+VERSION_DATE = "09.11.2026"
 UPDATED_SINCE = "21.10.2026"
 UPDATED_BY = "Mardo22"
 YOUTUBE = "youtube.com/@SetTvBox4U"
@@ -92,6 +108,11 @@ DIR_WORK = "/tmp/rcsc/"
 RCSC_PREFIX = "userbouquet.rcsc."
 BACKUP_DIR = "/media/hdd/rcsc-backup/"
 BACKUP_KEEP = 3
+# 1.8: picon links
+PICON_LIST = DIR_ENIGMA2 + "rcsc_picon_links"  # links created by RCSC (only these are ever removed)
+PICON_FILES = DIR_ENIGMA2 + "rcsc_picon_files"  # 1.9: picons downloaded from the server by RCSC
+PICON_DIRS = ["/data/picon/", "/usr/share/enigma2/picon/", "/media/hdd/picon/", "/media/usb/picon/", "/media/cf/picon/", "/picon/"]
+PICON_SERVICE_TYPES = ("1", "19", "16", "1F", "D")
 
 FLAG_MUST_DESCENT = 2
 FLAG_MARKER = 64
@@ -124,6 +145,14 @@ cfg.merge_lamedb = ConfigYesNo(True)
 cfg.copy_iptv = ConfigYesNo(True)
 cfg.streamrelay = ConfigYesNo(True)
 cfg.streamrelay_port = ConfigInteger(17999, (1, 65535))
+cfg.picon_links = ConfigYesNo(True)
+cfg.picon_download = ConfigYesNo(True)
+cfg.epg_map = ConfigYesNo(True)
+cfg.epg_server = ConfigYesNo(True)
+cfg.show_pluginbrowser = ConfigYesNo(False)
+cfg.show_extensions = ConfigYesNo(False)
+cfg.show_mainmenu = ConfigYesNo(False)
+cfg.picon_dir = ConfigSelection(default="auto", choices=[("auto", "auto")] + [(x, x) for x in PICON_DIRS])
 
 
 
@@ -355,6 +384,8 @@ def serviceNames(db):
 
 
 # ---------------------------------------------------------------- downloads
+LOAD_TIMEOUT = 25	# s - connecting to the server (until bouquets.tv is read)
+
 class WebifFetcher(object):
 	def __init__(self, address):
 		self.address = address
@@ -497,6 +528,7 @@ def convertLine(line, address, names, alternatives, relay=None):
 	return "#SERVICE %s:%s:%s" % (base, quote(url), name)
 
 
+
 def readAlternatives():
 	alternatives = {}
 	if os.path.isdir(DIR_WORK):
@@ -546,7 +578,7 @@ def localConverted(address):
 	return result
 
 
-def convertWorker(items, address, merge):
+def convertWorker(items, address, merge, server_epg=False):
 	result = {"bouquets": 0, "channels": 0, "backup": None, "relay": 0}
 	relay = readStreamRelay()
 	relay_port = ":%d/" % cfg.streamrelay_port.value
@@ -614,6 +646,9 @@ def convertWorker(items, address, merge):
 				result["lamedb"] = True
 		except Exception as e:
 			result["lamedb_error"] = str(e)
+	result["picons"] = safeSyncPicons(download=True)
+	# 2.0.1: EPG of the server only with Update all / MENU (not with every Convert - heavy EPG save, GUI waits)
+	result["epg"] = safeEpgWorker(server=server_epg and cfg.epg_server.value)
 	return result
 
 
@@ -628,7 +663,429 @@ def deleteWorker(files):
 	for btype in ("tv", "radio"):
 		if remove[btype]:
 			updateIndex(btype, [], remove[btype])
-	return len(files)
+	# 1.8: links of channels that are no longer in any RCSC bouquet are removed
+	return len(files), safeSyncPicons(), safeEpgWorker(server=False)
+
+
+# ---------------------------------------------------------------- 1.8: picon links (run in a thread, no enigma calls)
+def piconDirs():
+	"""picon directories: the one chosen in the settings, or (auto) the picon paths from /etc/enigma2/settings
+	(skins, picon plugins) and the usual paths - only existing directories with picons, each real directory once"""
+	if cfg.picon_dir.value != "auto":
+		cands = [cfg.picon_dir.value]
+	else:
+		cands = []
+		try:
+			for line in readLines(DIR_ENIGMA2 + "settings"):
+				key, sep, value = line.partition("=")
+				value = value.strip()
+				if sep and "picon" in key.lower() and value.startswith("/") and os.path.basename(value.rstrip("/")) == "picon":
+					cands.append(value)
+		except Exception:
+			pass
+		cands += PICON_DIRS
+	result = []
+	seen = set()
+	for d in cands:
+		d = d.rstrip("/") + "/"
+		if not os.path.isdir(d):
+			continue
+		real = os.path.realpath(d).rstrip("/") + "/"
+		if real in seen:
+			continue
+		if cfg.picon_dir.value == "auto":
+			try:
+				if not [x for x in os.listdir(real)[:200] if x.endswith(".png")]:
+					continue
+			except OSError:
+				continue
+		seen.add(real)
+		result.append(real)
+	return result
+
+
+def piconName(fields):
+	"""name of the picon the enigma2 Picon renderer looks for (first 10 fields, flags 0; the TSi image writes the
+	namespace in upper case, stock DreamOS 4.5 / 5.0 keeps it as it is - both names are linked, see rcscPiconServices)"""
+	x = list(fields[:10])
+	x[1] = "0"
+	x[6] = x[6].upper()
+	return "_".join(x)
+
+
+def piconCandidates(fields):
+	"""existing picons that fit the service: own service type first, then 1/19/16/1F/D; for each the namespace
+	of the server and the shortened namespace (ns & 0xFFFF0000) that picon packs use"""
+	x = [v.upper() for v in fields[:10]]
+	x[1] = "0"
+	try:
+		ns = int(x[6], 16)
+	except ValueError:
+		return []
+	namespaces = [x[6]]
+	short = "%X" % (ns & 0xFFFF0000)
+	if short not in namespaces:
+		namespaces.append(short)
+	stype = x[2].lstrip("0") or "0"
+	types = [stype] + [t for t in PICON_SERVICE_TYPES if t != stype]
+	result = []
+	for t in types:
+		for n in namespaces:
+			y = list(x)
+			y[2] = t
+			y[6] = n
+			name = "_".join(y)
+			if name not in result:
+				result.append(name)
+	return result
+
+
+def rcscFiles():
+	"""all RCSC bouquets (of every server)"""
+	try:
+		return [fn for fn in os.listdir(DIR_ENIGMA2) if fn.startswith(RCSC_PREFIX) and (fn.endswith(".tv") or fn.endswith(".radio"))]
+	except OSError:
+		return []
+
+
+def rcscPiconServices():
+	"""picon name -> fields of every stream service (type 1 with a link to the server) in the RCSC bouquets"""
+	services = {}
+	for fn in rcscFiles():
+		try:
+			lines = readLines(DIR_ENIGMA2 + fn)
+		except Exception:
+			continue
+		for line in lines:
+			if not line.startswith("#SERVICE ") or "http" not in line:
+				continue
+			f = parseRef(line)
+			if f is None or f[0] != "1" or int(f[1]) & (FLAG_MARKER | FLAG_MUST_DESCENT):
+				continue
+			services[piconName(f)] = f
+			# stock DreamOS 4.5 / 5.0 PiconResolver keeps the case of the namespace (TSi writes it in upper case)
+			raw = list(f[:10])
+			raw[1] = "0"
+			services["_".join(raw)] = f
+	return services
+
+
+def readPiconList(path):
+	try:
+		return set([x for x in readLines(path) if x.startswith("/")])
+	except Exception:
+		return set()
+
+
+def syncPicons(download=False):
+	"""creates the missing links, renews broken ones and removes own links that are not needed any more.
+	Real picon files are never touched; only links listed in PICON_LIST are removed.
+	1.9: download=True - picons still missing are downloaded from the server (option), listed in PICON_FILES."""
+	result = {"links": 0, "new": 0, "own": 0, "missing": 0, "removed": 0, "dirs": [], "server": 0, "server_new": 0}
+	wanted = rcscPiconServices() if cfg.picon_links.value else {}
+	known = readPiconList(PICON_LIST)
+	files_known = readPiconList(PICON_FILES)
+	keep = set()
+	keep_files = set()
+	missing = []
+	dirs = piconDirs() if wanted else []
+	result["dirs"] = dirs
+	for d in dirs:
+		try:
+			files = os.listdir(d)
+		except OSError:
+			continue
+		byname = {}
+		for fn in files:
+			if fn.endswith(".png"):
+				byname.setdefault(fn[:-4].upper(), fn)
+		for name, fields in wanted.items():
+			link = d + name + ".png"
+			islink = os.path.islink(link)
+			if not islink and os.path.exists(link):
+				if link in files_known:
+					keep_files.add(link)  # downloaded from the server before
+					result["server"] += 1
+				else:
+					result["own"] += 1  # the channel has its own picon
+				continue
+			if islink and link not in known and os.path.exists(link):
+				# a working link made by hand (or by RCSC in another slot) - adopted, left as it is
+				keep.add(link)
+				result["links"] += 1
+				continue
+			target = None
+			for cand in piconCandidates(fields):
+				real = byname.get(cand)
+				if not real or real == name + ".png":
+					continue
+				if os.path.islink(d + real) and (real[:-4] in wanted or d + real in known):
+					continue  # never a link to another RCSC link (no chains)
+				target = real
+				break
+			if target is None:
+				if d == dirs[0]:
+					missing.append((link, fields))
+				else:
+					result["missing"] += 1
+				continue
+			if islink:
+				try:
+					if os.readlink(link) == target and os.path.exists(link):
+						keep.add(link)
+						result["links"] += 1
+						continue
+				except OSError:
+					pass
+			tmp = link + ".rcsc_tmp"
+			try:
+				if os.path.lexists(tmp):
+					os.remove(tmp)
+				os.symlink(target, tmp)
+				os.rename(tmp, link)
+			except OSError as e:
+				print "[RCSC] picon link failed:", link, e
+				continue
+			keep.add(link)
+			result["links"] += 1
+			result["new"] += 1
+	# 1.9: picons still missing are downloaded from the server
+	if missing and download and cfg.picon_download.value and isServerSet():
+		got = downloadServerPicons(missing)
+		for link in got:
+			keep_files.add(link)
+		result["server"] += len(got)
+		result["server_new"] = len(got)
+		result["missing"] += len(missing) - len(got)
+	else:
+		result["missing"] += len(missing)
+	for link in known - keep:
+		if os.path.islink(link):
+			try:
+				os.remove(link)
+				result["removed"] += 1
+			except OSError:
+				pass
+	for path in files_known - keep_files:
+		if os.path.exists(path) and not os.path.islink(path):
+			try:
+				os.remove(path)
+				result["removed"] += 1
+			except OSError:
+				pass
+	for path, data, old in ((PICON_LIST, keep, known), (PICON_FILES, keep_files, files_known)):
+		if data or old:
+			try:
+				writeFileAtomic(path, "\n".join(sorted(data)) + "\n")
+			except Exception:
+				pass
+	return result
+
+
+def serviceKey(fields):
+	"""first 10 fields of a reference, flags ignored -> comparable key"""
+	x = list(fields[:10])
+	x[1] = "0"
+	return refKey(x)
+
+
+def serverPiconMap(web, address):
+	"""service key -> picon path on the server, from OpenWebif /api/getservices?picon=1 of the server bouquets
+	that belong to the RCSC bouquets of this server (one request per bouquet)"""
+	prefix = localPrefix(address)
+	result = {}
+	for fn in rcscFiles():
+		if not fn.startswith(prefix):
+			continue
+		remote = fn[len(prefix):]
+		btype = "2" if fn.endswith(".radio") else "1"
+		bref = '1:7:%s:0:0:0:0:0:0:0:FROM BOUQUET "%s" ORDER BY bouquet' % (btype, remote)
+		try:
+			data = json.loads(web._open("/api/getservices?sRef=%s&picon=1" % quote(bref), timeout=10))
+		except Exception as e:
+			print "[RCSC] picon list of the server failed:", remote, e
+			continue
+		for svc in data.get("services", []):
+			path = utf8(svc.get("picon") or "")
+			fields = utf8(svc.get("servicereference") or "").split(":")
+			if not path.startswith("/") or "default_picon" in path or len(fields) < 10:
+				continue
+			result[serviceKey(fields)] = path
+	return result
+
+
+def downloadServerPicons(missing):
+	"""missing: list of (local picon path, fields) -> list of the paths saved from the server"""
+	address = serverAddress()
+	web = WebifFetcher(address)
+	pmap = serverPiconMap(web, address)
+	saved = []
+	cache = {}
+	for link, fields in missing:
+		path = pmap.get(serviceKey(fields))
+		if not path:
+			continue
+		data = cache.get(path)
+		if data is None:
+			try:
+				data = web._open(quote(path), timeout=10)
+			except Exception:
+				data = ""
+			cache[path] = data
+		if not data.startswith("\x89PNG"):
+			continue
+		try:
+			writeFileAtomic(link, data)
+			saved.append(link)
+		except Exception as e:
+			print "[RCSC] picon save failed:", link, e
+	return saved
+
+
+def safeSyncPicons(download=False):
+	try:
+		return syncPicons(download)
+	except Exception as e:
+		print "[RCSC] picon links failed:", e
+		return {"error": str(e)}
+
+
+def piconText(p, short=False):
+	"""summary of syncPicons() for the message (short=True: for the status line)"""
+	if not p:
+		return ""
+	if p.get("error"):
+		return _("Picon links failed: %s") % p["error"]
+	removed = p.get("removed") and (_("Picon links removed: %d") % p["removed"]) or ""
+	if not cfg.picon_links.value or not p.get("dirs"):
+		return removed
+	if short:
+		return _("Picons: %d (server %d), without: %d") % (p["links"] + p["own"], p.get("server", 0), p["missing"])
+	txt = _("Picons: %d links (%d new), %d own, %d without picon") % (p["links"], p["new"], p["own"], p["missing"])
+	if p.get("server"):
+		txt += ", " + _("from server: %d (%d new)") % (p["server"], p.get("server_new", 0))
+	if removed:
+		txt += ", " + removed
+	return txt
+
+
+# ---------------------------------------------------------------- 2.0: EPG (runs in a thread, no enigma calls)
+SERVER_EPG_FILE = "/etc/enigma2/rcsc_server_epg.xml.gz"
+
+
+def rcscEpgServices():
+	"""reference (10 fields) -> fields of every stream channel in the RCSC bouquets"""
+	services = {}
+	for fn in rcscFiles():
+		try:
+			lines = readLines(DIR_ENIGMA2 + fn)
+		except Exception:
+			continue
+		for line in lines:
+			if not line.startswith("#SERVICE ") or "http" not in line:
+				continue
+			f = parseRef(line)
+			if f is None or f[0] != "1" or int(f[1]) & (FLAG_MARKER | FLAG_MUST_DESCENT):
+				continue
+			services[":".join(f[:10])] = f
+	return services
+
+
+def httpGet(url):
+	return urllib2.urlopen(urllib2.Request(url, headers={"User-Agent": "Enigma2 RCSC"}), timeout=30).read()
+
+
+def epgWorker(server=False):
+	"""(1) EPG mapping for EPGImport, (2) with server=True the EPG of the server for the channels without mapping"""
+	result = {"map": None, "server": None}
+	services = rcscEpgServices()
+	unmapped = set(services.keys())
+	if True:  # also removes the block when the option is off
+		result["map"] = epgmap.mapEpg(services if cfg.epg_map.value else {}, httpGet)
+		if cfg.epg_map.value:
+			unmapped = result["map"]["unmapped"]
+	if not services:
+		epgmap.removeServerEpg(SERVER_EPG_FILE)
+	elif server and cfg.epg_server.value and isServerSet():
+		address = serverAddress()
+		prefix = localPrefix(address)
+		bouquets = []
+		for fn in rcscFiles():
+			if fn.startswith(prefix):
+				btype = "2" if fn.endswith(".radio") else "1"
+				bouquets.append('1:7:%s:0:0:0:0:0:0:0:FROM BOUQUET "%s" ORDER BY bouquet' % (btype, fn[len(prefix):]))
+		refs = dict([(r.upper(), r) for r in unmapped])
+		result["server"] = epgmap.serverEpg(WebifFetcher(address), bouquets, refs, SERVER_EPG_FILE)
+	return result
+
+
+def safeEpgWorker(server=False):
+	try:
+		return epgWorker(server)
+	except Exception as e:
+		print "[RCSC] EPG failed:", e
+		return {"error": str(e)}
+
+
+def epgText(e):
+	"""summary of epgWorker() for the message"""
+	if not e:
+		return ""
+	if e.get("error"):
+		return _("EPG failed: %s") % e["error"]
+	lines = []
+	m = e.get("map")
+	if m and m.get("error") == "EPGImport":
+		lines.append(_("EPG: EPGImport is not installed."))
+	elif m and cfg.epg_map.value and m.get("channels"):
+		lines.append(_("EPG of the Dreambox: %d of %d channels mapped (after the next EPGImport run)") % (m["mapped"], m["channels"]))
+	srv = e.get("server")
+	if srv is not None:
+		if srv.get("events"):
+			lines.append(_("EPG from server: %d events for %d channels") % (srv["events"], srv["channels"]))
+		else:
+			lines.append(_("EPG from server: no new EPG (old data kept)"))
+	return "\n".join(lines)
+
+
+def startEpgImportAll():
+	"""starts EPGImport with all its enabled sources (like "Manual import" in EPGImport) - main thread"""
+	try:
+		from Plugins.Extensions.EPGImport import plugin as epi
+		if not epi.ensure_runtime_modules() or epi.epgimport.isImportRunning():
+			return False
+		epi.EPGConfig.channelCache = {}
+		conf = epi.EPGConfig.loadUserSettings()
+		sources = [x for x in epi.EPGConfig.enumSources(epi.CONFIG_PATH, filter=conf["sources"])]
+		if not sources:
+			return False
+		sources.reverse()
+		epi.epgimport.sources = sources
+		epi.startImport()
+		return True
+	except Exception as e:
+		print "[RCSC] EPGImport start failed:", e
+		return False
+
+
+def startEpgImportOfServer():
+	"""imports only the source "RCSC - EPG from server" with EPGImport (like its own import) - main thread"""
+	if not os.path.exists(epgmap.SERVER_SOURCES):
+		return False
+	try:
+		from Plugins.Extensions.EPGImport import plugin as epi
+		if not epi.ensure_runtime_modules() or epi.epgimport.isImportRunning():
+			return False
+		epi.EPGConfig.channelCache = {}
+		sources = [x for x in epi.EPGConfig.enumSourcesFile(epgmap.SERVER_SOURCES)]
+		if not sources:
+			return False
+		epi.epgimport.sources = sources
+		epi.startImport()
+		return True
+	except Exception as e:
+		print "[RCSC] EPGImport start failed:", e
+		return False
 
 
 def reloadEnigmaLists(services=True):
@@ -749,9 +1206,16 @@ class RCSCMain(Screen):
 	def start(self):
 		if not isServerSet():
 			self["status"].setText(_("Set the server IP first (yellow button)."))
-			self.keySettings()
+			# 2.0.1 fix (09.11.2026): open the settings only after this window is shown. Opened from onLayoutFinish,
+			# the settings stayed hidden behind the main window, yellow did nothing and red showed them.
+			from twisted.internet import reactor
+			reactor.callLater(0.3, self.openFirstSettings)
 			return
 		self.loadRemote()
+
+	def openFirstSettings(self):
+		if self.alive() and not self.closing:
+			self.keySettings()
 
 	def prepareWorkDir(self):
 		if not os.path.isdir(DIR_WORK):
@@ -763,6 +1227,11 @@ class RCSCMain(Screen):
 				pass
 
 	def loadRemote(self):
+		# 2.0.1 fix (09.11.2026): every load has its own number - answers of an older (cancelled) load are ignored,
+		# yellow can cancel the connecting, and connecting gives up after LOAD_TIMEOUT s (wrong IP never answered).
+		self.loadGen = self.__dict__.get("loadGen", 0) + 1
+		self.loading = True
+		self.connected = False
 		self.working = True
 		self.entries = []
 		self["list"].setList([])
@@ -773,8 +1242,21 @@ class RCSCMain(Screen):
 		self.prepareWorkDir()
 		self.updateServerInfo(None)
 		self["status"].setText(_("Connecting to %s ...") % self.address)
-		WebifFetcher(self.address).status().addCallback(self.statusReceived).addErrback(lambda e: None)
+		WebifFetcher(self.address).status().addCallback(self.statusReceived, self.loadGen).addErrback(lambda e: None)
 		self.fetchSeq(["bouquets.tv", "bouquets.radio"], None, self.indexFetched)
+		from twisted.internet import reactor
+		reactor.callLater(LOAD_TIMEOUT, self._loadTimeout, self.loadGen)
+
+	def _loadTimeout(self, gen):
+		if not self.alive() or gen != self.loadGen or not self.loading or self.connected:
+			return
+		self.cancelLoad()
+		self["status"].setText(_("Could not connect to %s - check the server IP (yellow button).") % self.address)
+
+	def cancelLoad(self):
+		self.loadGen += 1
+		self.loading = False
+		self.working = False
 
 	def fetchSeq(self, names, fmt, done):
 		self._queue = list(names)
@@ -785,7 +1267,7 @@ class RCSCMain(Screen):
 		self._fetchNext()
 
 	def _fetchNext(self, *args):
-		if self.closing:
+		if not self.alive():
 			return
 		if self._qi >= len(self._queue):
 			self._qdone(self._failed)
@@ -794,20 +1276,29 @@ class RCSCMain(Screen):
 		self._qi += 1
 		if self._qfmt:
 			self["status"].setText(self._qfmt % (self._qi, len(self._queue)))
+		gen = self.loadGen
 		d = self.fetcher.get(name, DIR_WORK + name)
-		d.addCallback(self._fetchNext)
-		d.addErrback(self._fetchFailed, name)
+		d.addCallback(self._fetchDone, gen)
+		d.addErrback(self._fetchFailed, name, gen)
 
-	def _fetchFailed(self, failure, name):
+	def _fetchDone(self, result, gen):
+		if self.alive() and gen == self.loadGen:
+			self._fetchNext()
+
+	def _fetchFailed(self, failure, name, gen=None):
 		print "[RCSC] download failed:", name, failure
+		if not self.alive() or gen != self.loadGen:
+			return
 		self._failed.append(name)
 		self._fetchNext()
 
 	def indexFetched(self, failed):
 		if "bouquets.tv" in failed:
+			self.loading = False
 			self.working = False
 			self["status"].setText(_("Could not connect to %s") % self.address)
 			return
+		self.connected = True
 		self.remoteIndex = []
 		for btype in ("tv", "radio"):
 			for fn in parseBouquetsIndex(DIR_WORK + "bouquets." + btype):
@@ -829,6 +1320,7 @@ class RCSCMain(Screen):
 			self.allFetched([])
 
 	def allFetched(self, failed):
+		self.loading = False
 		self.working = False
 		self.buildItems()
 		if not self.entries:
@@ -841,15 +1333,28 @@ class RCSCMain(Screen):
 	def buildItems(self):
 		prefix = localPrefix(self.address)
 		converted = localConverted(self.address)
-		convertedNames = dict([(name, fn) for fn, name in converted])
-		self.entries = []
+		# 1.7: every local bouquet counts for one server bouquet only (same names like "Others" were counted twice)
+		claimed = set()
+		rows = []
 		for fn, btype in self.remoteIndex:
 			if fn in self._bouquetFailed:
 				continue
+			local = prefix + fn
+			exact = os.path.exists(DIR_ENIGMA2 + local)
+			if exact:
+				claimed.add(local)
+			rows.append((fn, btype, local, exact))
+		self.entries = []
+		for fn, btype, local, exact in rows:
 			count, sats = analyseBouquet(DIR_WORK + fn)
 			name = readBouquetName(DIR_WORK + fn) or fn
-			local = prefix + fn
-			isConv = os.path.exists(DIR_ENIGMA2 + local) or name in convertedNames
+			isConv = exact
+			if not isConv:
+				for lfn, lname in converted:
+					if lname == name and lfn not in claimed:
+						claimed.add(lfn)
+						isConv = True
+						break
 			self.entries.append({"remote": fn, "type": btype, "name": name, "count": count, "sats": sats,
 				"local": local, "converted": isConv, "selected": False})
 		self.refreshList()
@@ -869,8 +1374,8 @@ class RCSCMain(Screen):
 		self["status"].setText(txt)
 
 	# ---- server info
-	def statusReceived(self, info):
-		if not self.closing:
+	def statusReceived(self, info, gen=None):
+		if self.alive() and (gen is None or gen == self.loadGen):
 			self.updateServerInfo(info)
 
 	def updateServerInfo(self, info):
@@ -899,7 +1404,7 @@ class RCSCMain(Screen):
 			if busy:
 				lines.append(_("Server busy tuners: %s") % ", ".join(busy))
 			lines.append("")
-			lines.append(_("Tip: if the server has only one tuner configured, the Dreambox plays only channels of the transponder the server is on (or all, when the server is in standby)."))
+			lines.append(_("Tip: one tuner on the server = channels of one transponder only (all in standby)."))
 		self["server_info"].setText("\n".join([utf8(x) for x in lines]))
 
 	def updateDetail(self):
@@ -926,6 +1431,10 @@ class RCSCMain(Screen):
 		return None
 
 	# ---- keys
+	def alive(self):
+		# 1.7: enigma clears __dict__ of a closed Screen - late callbacks must not touch it
+		return not self.__dict__.get("closing", True)
+
 	def keyClose(self):
 		self.closing = True
 		self.close()
@@ -945,11 +1454,21 @@ class RCSCMain(Screen):
 		self.refreshList()
 
 	def keySettings(self):
-		if self.working:
+		# 2.0.1: only one settings window (at the first start it opens by itself - yellow must not open a second one)
+		if self.__dict__.get("settingsOpen"):
 			return
+		if self.working:
+			if not self.__dict__.get("loading"):
+				return
+			self.cancelLoad()		# 2.0.1 fix: yellow while connecting/reading - stop it and open the settings
+			self["status"].setText(_("Connecting cancelled."))
+		self.settingsOpen = True
 		self.session.openWithCallback(self.settingsClosed, RCSCSetup)
 
 	def settingsClosed(self, changed=False):
+		self.__dict__["settingsOpen"] = False
+		if not self.alive():
+			return
 		if changed or (isServerSet() and not self.entries):
 			if isServerSet():
 				self.loadRemote()
@@ -973,13 +1492,16 @@ class RCSCMain(Screen):
 			menu.append((_("Update all converted bouquets (%d)") % len(conv), "update"))
 			menu.append((_("Delete selected converted bouquets"), "delete_sel"))
 		menu.append((_("Delete all converted bouquets of this server (%d)") % len(local), "delete_all"))
+		menu.append((_("Update picon links of the channels"), "picons"))
+		menu.append((_("Update EPG from server"), "epg"))
+		menu.append((_("Start EPGImport now (all sources)"), "epgimport"))
 		menu.append((_("Reload list from server"), "reload"))
 		menu.append((_("Server settings"), "settings"))
 		menu.append((_("About"), "about"))
 		self.session.openWithCallback(self.menuCallback, ChoiceBox, title=_("Options"), list=menu)
 
 	def menuCallback(self, choice):
-		if not choice:
+		if not choice or not self.alive():
 			return
 		action = choice[1]
 		if action == "update":
@@ -988,12 +1510,21 @@ class RCSCMain(Screen):
 				self["status"].setText(_("No converted bouquets."))
 				return
 			missing = len(localConverted(self.address)) - len(conv)
-			self.convert(conv, missing > 0 and (_("Not found on server: %d") % missing) or "")
+			self.convert(conv, missing > 0 and (_("Not found on server: %d") % missing) or "", server_epg=True)
 		elif action == "delete_sel":
 			files = [x["local"] for x in self.entries if x["selected"] and x["converted"] and os.path.exists(DIR_ENIGMA2 + x["local"])]
 			self.askDelete(files)
 		elif action == "delete_all":
 			self.askDelete([fn for fn, name in localConverted(serverAddress())])
+		elif action == "picons":
+			self.startPicons()
+		elif action == "epg":
+			self.startEpg()
+		elif action == "epgimport":
+			if startEpgImportAll():
+				self["status"].setText(_("EPGImport is running - EPG comes in a few minutes."))
+			else:
+				self["status"].setText(_("EPGImport could not be started (not installed or already running)."))
 		elif action == "reload":
 			if isServerSet():
 				self.loadRemote()
@@ -1008,24 +1539,63 @@ class RCSCMain(Screen):
 			self["status"].setText(_("No converted bouquets."))
 			return
 		self._deleteFiles = files
-		self.session.openWithCallback(self.deleteConfirmed, MessageBox, _("Really delete %d converted bouquets?") % len(files), MessageBox.TYPE_YESNO, default=False)
+		self.session.openWithCallback(self.deleteConfirmed, MessageBox, (len(files) == 1 and _("Really delete 1 converted bouquet?") or _("Really delete %d converted bouquets?") % len(files)), MessageBox.TYPE_YESNO, default=False)
 
 	def deleteConfirmed(self, answer):
-		if not answer:
+		if not answer or not self.alive():
 			return
 		self.working = True
+		# 2.0.2: message while deleting (picon links + EPG mapping take a while, the window did not change)
+		n = len(self._deleteFiles)
+		self["status"].setText((n == 1 and _("Deleting 1 bouquet ...") or _("Deleting %d bouquets ...") % n) + "\n" + _("Updating picon links and EPG mapping - please wait."))
 		threads.deferToThread(deleteWorker, self._deleteFiles).addCallback(self.deleteDone).addErrback(self.workerFailed)
 
-	def deleteDone(self, count):
-		self.working = False
+	def deleteDone(self, res):
 		reloadEnigmaLists(services=False)
+		if not self.alive():
+			return
+		count, picons = res[0], res[1]
+		self.working = False
 		if self.entries:
 			self.buildItems()
-		self.showSummary(_("Deleted %d bouquets.") % count)
+		self.showSummary(count == 1 and _("Deleted 1 bouquet.") or _("Deleted %d bouquets.") % count)
+		ptxt = piconText(picons, short=True)
+		if ptxt:
+			self["status"].setText(self["status"].getText() + "\n" + ptxt)
+
+	# ---- 2.0: EPG on demand (MENU)
+	def startEpg(self):
+		self.working = True
+		self["status"].setText(_("Updating EPG ..."))
+		threads.deferToThread(safeEpgWorker, True).addCallback(self.epgDone).addErrback(self.workerFailed)
+
+	def epgDone(self, epg):
+		if not self.alive():
+			return
+		self.working = False
+		text = epgText(epg)
+		if (epg.get("server") or {}).get("events"):
+			if startEpgImportOfServer():
+				text += "\n" + _("EPGImport is importing the EPG of the server now.")
+		self["status"].setText(_("EPG updated."))
+		self.session.open(MessageBox, text or _("EPG options are off (settings)."), MessageBox.TYPE_INFO, timeout=10)
+
+	# ---- 1.8: picon links only (without converting)
+	def startPicons(self):
+		self.working = True
+		self["status"].setText(_("Creating picon links ..."))
+		threads.deferToThread(safeSyncPicons, True).addCallback(self.piconsDone).addErrback(self.workerFailed)
+
+	def piconsDone(self, picons):
+		if not self.alive():
+			return
+		self.working = False
+		self["status"].setText(piconText(picons) or _("Picon links are off (settings)."))
 
 	# ---- convert
-	def convert(self, items, extra=""):
+	def convert(self, items, extra="", server_epg=False):
 		self.working = True
+		self._serverEpg = server_epg
 		self._convertItems = items
 		self._convertExtra = extra
 		self._backupName = None
@@ -1036,40 +1606,62 @@ class RCSCMain(Screen):
 			self.startConvert()
 
 	def backupDone(self, name):
+		if not self.alive():
+			return
 		self._backupName = name
 		self.startConvert()
 
 	def backupFailed(self, failure):
+		if not self.alive():
+			return
 		self.working = False
 		self.session.open(MessageBox, _("Backup failed: %s") % failure.getErrorMessage(), MessageBox.TYPE_ERROR)
 		self.showSummary()
 
 	def startConvert(self):
-		self["status"].setText(_("Converting %d bouquets ...") % len(self._convertItems))
-		threads.deferToThread(convertWorker, self._convertItems, self.address, cfg.merge_lamedb.value) \
+		n = len(self._convertItems)
+		self["status"].setText(n == 1 and _("Converting 1 bouquet ...") or _("Converting %d bouquets ...") % n)
+		threads.deferToThread(convertWorker, self._convertItems, self.address, cfg.merge_lamedb.value, self._serverEpg) \
 			.addCallback(self.convertDone).addErrback(self.workerFailed)
 
 	def convertDone(self, result):
-		self.working = False
 		reloadEnigmaLists(services=True)
+		if not self.alive():
+			return
+		self.working = False
 		for x in self.entries:
 			x["selected"] = False
 		self.buildItems()
-		msg = _("Done: %d bouquets, %d channels converted.") % (result["bouquets"], result["channels"])
+		if result["bouquets"] == 1:
+			msg = _("Done: 1 bouquet, %d channels converted.") % result["channels"]
+		else:
+			msg = _("Done: %d bouquets, %d channels converted.") % (result["bouquets"], result["channels"])
 		if result.get("relay"):
 			msg += "  " + _("StreamRelay: %d channels") % result["relay"]
 		if self._convertExtra:
 			msg += "  " + self._convertExtra
+		ptxt = piconText(result.get("picons"))
+		pshort = piconText(result.get("picons"), short=True)
 		self.showSummary()
-		self["status"].setText(msg)
-		text = msg
+		self["status"].setText(msg + (pshort and "\n" + pshort or ""))
+		text = msg + (ptxt and "\n" + ptxt or "")
+		etxt = epgText(result.get("epg"))
+		if etxt:
+			text += "\n" + etxt
+		if (result.get("epg") or {}).get("server", {}) and result["epg"]["server"].get("events"):
+			if startEpgImportOfServer():
+				text += "\n" + _("EPGImport is importing the EPG of the server now.")
+		elif cfg.epg_server.value and not self._serverEpg:
+			text += "\n" + _("EPG from server: MENU - Update EPG from server")
 		if self._backupName:
 			text += "\n" + _("Backup: %s") % self._backupName
 		self.session.open(MessageBox, text, MessageBox.TYPE_INFO, timeout=8)
 
 	def workerFailed(self, failure):
-		self.working = False
 		print "[RCSC] worker failed:", failure
+		if not self.alive():
+			return
+		self.working = False
 		self["status"].setText("%s: %s" % (_("Conversion failed"), failure.getErrorMessage()))
 
 
@@ -1157,7 +1749,16 @@ class RCSCSetup(ConfigListScreen, Screen):
 			lst.append(getConfigListEntry(_("StreamRelay port"), cfg.streamrelay_port, _("StreamRelay port of the server, usually 17999.")))
 		lst.append(getConfigListEntry(_("Merge server lamedb (names, providers)"), cfg.merge_lamedb, _("Adds the server's services to the local lamedb without duplicates.")))
 		lst.append(getConfigListEntry(_("Copy IPTV channels (internet links)"), cfg.copy_iptv, _("IPTV channels of the server are copied with their original internet links - the Dreambox plays them directly from the internet.")))
+		lst.append(getConfigListEntry(_("EPG of the Dreambox for the channels (EPGImport)"), cfg.epg_map, _("The XMLTV ids of your EPGImport sources are assigned to the channels of the server (own block in /etc/epgimport/custom.channels.xml). Channel references and numbers do not change. EPG after the next EPGImport run.")))
+		lst.append(getConfigListEntry(_("EPG from server (only on demand)"), cfg.epg_server, _("With Update all / MENU 'Update EPG from server' the EPG of the server is taken for channels without EPG of the Dreambox. Nothing runs automatically; without EPG on the server old data stay.")))
+		lst.append(getConfigListEntry(_("Create picon links for the channels"), cfg.picon_links, _("After every conversion the plugin links the picons of the channels to the stream services, so that the channels of the server have logos. Own picon files are not changed.")))
+		if cfg.picon_links.value:
+			lst.append(getConfigListEntry(_("Import missing picons from server"), cfg.picon_download, _("Channels without a picon on the Dreambox get the picon of the server (OpenWebif). Existing picons are never replaced.")))
+			lst.append(getConfigListEntry(_("Picon directory"), cfg.picon_dir, _("auto = picon directory of the skin / picon plugins (e.g. /data/picon, /media/hdd/picon, /usr/share/enigma2/picon).")))
 		lst.append(getConfigListEntry(_("Backup /etc/enigma2 before converting"), cfg.backup, _("Backup to /media/hdd/rcsc-backup (last 3 are kept).")))
+		lst.append(getConfigListEntry(_("Show in plugin browser"), cfg.show_pluginbrowser, _("Entry in the plugin browser (after GUI restart). Always in: Menu > Setup > Services and Recordings > Service Searching.")))
+		lst.append(getConfigListEntry(_("Show in extensions menu (blue button)"), cfg.show_extensions, _("Quick start with the blue button in TV mode (after GUI restart).")))
+		lst.append(getConfigListEntry(_("Show in main menu"), cfg.show_mainmenu, _("Entry in the main menu (after GUI restart).")))
 		lst.append(getConfigListEntry(_("Plugin language"), cfg.language, ""))
 		self.list = lst
 		self["config"].list = lst
@@ -1165,7 +1766,7 @@ class RCSCSetup(ConfigListScreen, Screen):
 
 	def changed(self):
 		cur = self["config"].getCurrent()
-		if cur and cur[1] in (cfg.mode, cfg.language, cfg.streamrelay):
+		if cur and cur[1] in (cfg.mode, cfg.language, cfg.streamrelay, cfg.picon_links):
 			self.createSetup()
 
 	def updateDescription(self):
@@ -1179,9 +1780,15 @@ class RCSCSetup(ConfigListScreen, Screen):
 
 	def keySave(self):
 		changed = self["config"].isChanged()
+		entries = (cfg.show_pluginbrowser, cfg.show_extensions, cfg.show_mainmenu)
+		restart = [x for x in entries if x.isChanged()]
 		self.saveAll()
 		cfg.mode.save()
 		configfile.save()
+		if restart:
+			self.session.openWithCallback(lambda *a: self.close(True if changed else False), MessageBox,
+				_("The menu entries change after a GUI restart."), MessageBox.TYPE_INFO, timeout=6)
+			return
 		self.close(True if changed else False)
 
 	def keyCancel(self):
@@ -1201,6 +1808,21 @@ def menu(menuid, **kwargs):
 	return []
 
 
+def mainmenu(menuid, **kwargs):
+	if menuid == "mainmenu":
+		return [(_("Remote channel stream converter"), main, "rcsc_mainmenu", 45)]
+	return []
+
+
 def Plugins(**kwargs):
-	return [PluginDescriptor(name=_("Remote channel stream converter"), description=_("Convert remote channel list for streaming"),
-		where=PluginDescriptor.WHERE_MENU, fnc=menu)]
+	name = _("Remote channel stream converter")
+	desc = _("Convert remote channel list for streaming")
+	result = [PluginDescriptor(name=name, description=desc, where=PluginDescriptor.WHERE_MENU, fnc=menu)]
+	# 1.9: optional entries (default off - the positions of other plugins do not move)
+	if cfg.show_pluginbrowser.value:
+		result.append(PluginDescriptor(name=name, description=desc, where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=main))
+	if cfg.show_extensions.value:
+		result.append(PluginDescriptor(name=name, description=desc, where=PluginDescriptor.WHERE_EXTENSIONSMENU, fnc=main))
+	if cfg.show_mainmenu.value:
+		result.append(PluginDescriptor(name=name, description=desc, where=PluginDescriptor.WHERE_MENU, fnc=mainmenu))
+	return result
