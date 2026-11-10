@@ -4,7 +4,7 @@ Screenshots: **Dreambox Two** with DreamOS 5.0 (version 2.0.2) and DreamOS 4.5 (
 the steps are the same). The server in this example is a **Vu+ Ultimo 4K with OpenBH** (IP `192.168.0.203`) – replace it
 with the IP address of your own server.
 
-📄 The same guide as PDF: [English](RCSC-2.0.2_User-Guide_EN.pdf) · [Arabic](RCSC-2.0.2_User-Guide_AR.pdf)
+📄 The same guide as PDF: [English](RCSC-2.0.2_User-Guide_EN.pdf) · [Arabic](RCSC-2.0.2_User-Guide_AR.pdf) · [Slovak](RCSC-2.0.2_Navod_SK.pdf)
 📺 YouTube: [SetTvBox4U](https://www.youtube.com/@SetTvBox4U)
 
 ---
