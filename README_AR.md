@@ -21,6 +21,9 @@
 🎬 فيديو الشرح "طريقة الاستخدام": قريباً على قناة يوتيوب.<br>
 📄 دليل الاستخدام PDF: [العربية](docs/RCSC-2.0.2_User-Guide_AR.pdf) · [English](docs/RCSC-2.0.2_User-Guide_EN.pdf) · [Slovensky](docs/RCSC-2.0.2_Navod_SK.pdf)
 
+
+🆕 **صور مفتوحة المصدر (OpenATV و OpenBH و PurE2 – Python 3):** حزمة منفصلة 2.1.0 ← [open-source/](open-source/README_AR.md)
+
 ## كيف يعمل؟
 
 ![كيف يعمل](docs/images/16-how-it-works-ar.png)
