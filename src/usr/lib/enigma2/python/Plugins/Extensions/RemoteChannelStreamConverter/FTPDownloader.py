@@ -3,6 +3,7 @@
 # Remote channel stream converter for DreamOS - https://www.youtube.com/@SetTvBox4U
 # Copyright (C) the original authors of the Enigma2 plugin "Remote channel stream converter"
 #   (OpenPLi / E2OpenPlugins / OE-Alliance contributors)
+# First DreamOS port (version 1.0, 2019): seagen (linuxsat-support.com)
 # This file is unchanged from the original plugin (only this license header was added).
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of

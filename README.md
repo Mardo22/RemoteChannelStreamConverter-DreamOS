@@ -101,7 +101,7 @@ The converted bouquets are named `… (remote of <server IP>)` and appear in the
 - Original plugin **"Remote channel stream converter"** for Enigma2 – OpenPLi, E2OpenPlugins
   ([e2openplugin-RemoteChannelStreamConverter](https://github.com/E2OpenPlugins/e2openplugin-RemoteChannelStreamConverter)),
   OE-Alliance ([RemoteChannelStreamConverter](https://github.com/oe-alliance-plugins/RemoteChannelStreamConverter), GPL-3.0).
-- DreamOS port 1.0 (2019) – unknown author.
+- First DreamOS port 1.0 (2019) – **seagen** ([linuxsat-support.com](https://www.linuxsat-support.com/thread/139061-remote-stream-channel-converter/)) – the base of this update.
 - Versions 1.1 – 2.0.2 for DreamOS 4.5 / 5.0 (new user interface, OpenWebif, IPTV, StreamRelay, picons, EPG, …):
   **Mardo22 ([SetTvBox4U](https://www.youtube.com/@SetTvBox4U))**, 2026 – see [CHANGELOG.md](CHANGELOG.md).
 

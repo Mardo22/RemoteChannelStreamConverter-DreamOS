@@ -3,6 +3,7 @@
 # Remote channel stream converter for DreamOS - https://www.youtube.com/@SetTvBox4U
 # Copyright (C) the original authors of the Enigma2 plugin "Remote channel stream converter"
 #   (OpenPLi / E2OpenPlugins / OE-Alliance contributors)
+# First DreamOS port (version 1.0, 2019): seagen (linuxsat-support.com)
 # Modifications for DreamOS 4.5 / 5.0 (versions 1.1 - 2.0, since 21.10.2026):
 #   Copyright (C) 2026 Mardo22 (SetTvBox4U)
 #
@@ -19,6 +20,7 @@ TRANSLATIONS = {
 	"sk": {
 		"Updated and extended version of the open-source Enigma2 plugin \"Remote channel stream converter\" for DreamOS 4.5 and 5.0.": "Aktualizovaná a rozšírená verzia open-source pluginu Enigma2 \"Remote channel stream converter\" pre DreamOS 4.5 a 5.0.",
 		"Original plugin published by: OpenPLi, E2OpenPlugins, OE-Alliance": "Pôvodný plugin zverejnili: OpenPLi, E2OpenPlugins, OE-Alliance",
+		"First DreamOS port (1.0, 2019): seagen (linuxsat-support.com)": "Prvý port pre DreamOS (1.0, 2019): seagen (linuxsat-support.com)",
 		"License: GPL-3.0": "Licencia: GPL-3.0",
 		"About": "O plugine",
 		"Use StreamRelay of the server": "Použiť StreamRelay servera",
@@ -148,6 +150,7 @@ TRANSLATIONS = {
 	"cs": {
 		"Updated and extended version of the open-source Enigma2 plugin \"Remote channel stream converter\" for DreamOS 4.5 and 5.0.": "Aktualizovaná a rozšířená verze open-source pluginu Enigma2 \"Remote channel stream converter\" pro DreamOS 4.5 a 5.0.",
 		"Original plugin published by: OpenPLi, E2OpenPlugins, OE-Alliance": "Původní plugin zveřejnili: OpenPLi, E2OpenPlugins, OE-Alliance",
+		"First DreamOS port (1.0, 2019): seagen (linuxsat-support.com)": "První port pro DreamOS (1.0, 2019): seagen (linuxsat-support.com)",
 		"License: GPL-3.0": "Licence: GPL-3.0",
 		"Use StreamRelay of the server": "Použít StreamRelay serveru",
 		"Channels in the StreamRelay list of the server (whitelist_streamrelay) are decrypted by the server and streamed on its StreamRelay port.": "Kanály ze seznamu StreamRelay serveru (whitelist_streamrelay) server sám dešifruje a posílá přes port StreamRelay.",

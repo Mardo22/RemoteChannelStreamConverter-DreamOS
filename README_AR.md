@@ -101,7 +101,7 @@ systemctl restart enigma2
 
 ## الشكر
 - البلجن الأصلي **Remote channel stream converter** لأجهزة Enigma2 – OpenPLi و E2OpenPlugins و OE-Alliance (رخصة GPL-3.0).
-- نسخة DreamOS الأولى 1.0 (2019) – مؤلف غير معروف.
+- نسخة DreamOS الأولى 1.0 (2019) – **seagen** ([linuxsat-support.com](https://www.linuxsat-support.com/thread/139061-remote-stream-channel-converter/)) – وهي أساس تحديثنا.
 - الإصدارات 1.1 – 2.0.2 لنظام DreamOS 4.5 و 5.0 (واجهة جديدة، OpenWebif، IPTV، StreamRelay، اللوغو، دليل البرامج …):
   **Mardo22 ([SetTvBox4U](https://www.youtube.com/@SetTvBox4U))**، 2026 – انظر [CHANGELOG.md](CHANGELOG.md).
 
