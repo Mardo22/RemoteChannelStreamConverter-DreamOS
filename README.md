@@ -14,7 +14,7 @@ DreamOS has no "Fallback tuner" function like OpenPLi / OE-Alliance images – t
 **Current version: 2.0.2** (09.11.2026) – one package for DreamOS 4.5 and 5.0.
 
 📺 YouTube channel: **[SetTvBox4U – youtube.com/@SetTvBox4U](https://www.youtube.com/@SetTvBox4U)**
-🎬 Video guide "How to use": coming soon on the YouTube channel.
+🎬 Video guide "How to use" (Arabic, subtitles AR / EN / SK): **[https://youtu.be/0g_nDegcdgA](https://youtu.be/0g_nDegcdgA)** · short trailer: [https://youtu.be/_XV1O1YvzN4](https://youtu.be/_XV1O1YvzN4)
 📄 PDF user guide: [English](docs/RCSC-2.0.2_User-Guide_EN.pdf) · [Arabic – العربية](docs/RCSC-2.0.2_User-Guide_AR.pdf) · [Slovak – Slovensky](docs/RCSC-2.0.2_Navod_SK.pdf)
 
 ## How it works
