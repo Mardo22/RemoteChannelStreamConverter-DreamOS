@@ -29,7 +29,7 @@
 **الإصدار الحالي: 2.0.2** (09.11.2026) – حزمة واحدة لنظام DreamOS 4.5 و 5.0.
 
 📺 قناة يوتيوب: **[SetTvBox4U – youtube.com/@SetTvBox4U](https://www.youtube.com/@SetTvBox4U)**<br>
-🎬 شرح الفيديو الكامل: **[https://youtu.be/0g_nDegcdgA](https://youtu.be/0g_nDegcdgA)**<br>
+🎬 شرح الفيديو الكامل: **[https://youtu.be/CLJeFTDPoZw](https://youtu.be/CLJeFTDPoZw)**<br>
 📄 دليل الاستخدام PDF: [العربية](docs/RCSC-2.0.2_User-Guide_AR.pdf) · [English](docs/RCSC-2.0.2_User-Guide_EN.pdf) · [Slovensky](docs/RCSC-2.0.2_Navod_SK.pdf)
 
 
