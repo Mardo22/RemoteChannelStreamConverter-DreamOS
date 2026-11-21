@@ -1,5 +1,12 @@
 # Step-by-step guide – Remote channel stream converter 2.0.2 for DreamOS
 
+> [!CAUTION]
+> **⚠️ We do not support illegal viewing, sharing or distribution of TV channels. This plugin and all our videos are for educational purposes only.**<br>
+> **⚠️ نحن لا ندعم المشاهدة أو المشاركة أو النشر غير القانوني للقنوات التلفزيونية. هذه الإضافة وجميع فيديوهاتنا لأغراض تعليمية فقط.**<br>
+> **⚠️ Nepodporujeme nelegálne sledovanie, zdieľanie ani šírenie TV kanálov. Plugin aj všetky naše videá slúžia len na vzdelávacie účely.**<br>
+> **⚠️ Wir unterstützen kein illegales Ansehen, Teilen oder Verbreiten von TV-Sendern. Dieses Plugin und alle unsere Videos dienen nur Lernzwecken.**<br>
+> **⚠️ Ní thacaímid le féachaint, comhroinnt ná scaipeadh mídhleathach cainéal teilifíse. Is chun críocha oideachais amháin atá an breiseán seo agus ár bhfíseáin go léir.**
+
 Screenshots: **Dreambox Two** with DreamOS 5.0 (version 2.0.2) and DreamOS 4.5 (menu screenshots of older versions –
 the steps are the same). The server in this example is a **Vu+ Ultimo 4K with OpenBH** (IP `192.168.0.203`) – replace it
 with the IP address of your own server.
