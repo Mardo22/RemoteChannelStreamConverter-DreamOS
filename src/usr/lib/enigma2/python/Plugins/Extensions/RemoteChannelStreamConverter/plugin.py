@@ -33,6 +33,11 @@
 #      namespace ns & 0xFFFF0000, service types 1/19/16/1F/D), so that the channels of the server have logos.
 # 1.9 (05.11.2026): missing picons are downloaded from the server (OpenWebif /api/getservices&picon=1, option),
 #      optional entries in the plugin browser, the extensions menu (blue button) and the main menu.
+# 2.0.4 (22.11.2026): online update from GitHub - when the plugin is opened it asks GitHub for the latest
+#   published release; if it is newer, OK downloads and installs it (dpkg -i) and offers a GUI restart.
+#   Option "Check for updates when opening" and MENU "Check for updates now".
+# 2.0.3 (22.11.2026): MENU "Start EPGImport now" also works with EPGImport versions without
+#   ensure_runtime_modules() (for example TITANIUM AIO) - before: "EPGImport start failed".
 # 2.0.2 (09.11.2026): short tip in the server panel (the long one was cut off at the bottom), message "Deleting ..."
 #   while the bouquets, picon links and EPG mapping are removed (before, the window did not change for ~45 s).
 # 2.0.1 (05.11.2026): EPG of the server only with Update all / MENU (Convert stays light), one settings window at the
@@ -73,12 +78,16 @@ from twisted.internet import threads
 from . import _
 from .FTPDownloader import FTPDownloader
 from . import epgmap
+from . import updater
 
-VERSION = "2.0.2"
-VERSION_DATE = "09.11.2026"
+VERSION = "2.0.4"
+VERSION_DATE = "22.11.2026"
 UPDATED_SINCE = "21.10.2026"
 UPDATED_BY = "Mardo22"
 YOUTUBE = "youtube.com/@SetTvBox4U"
+GITHUB_REPO = "Mardo22/RemoteChannelStreamConverter-DreamOS"
+UPDATE_SUFFIX = ".deb"
+UPDATE_COMMAND = ["dpkg", "-i"]
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 QR_SMALL = os.path.join(PLUGIN_DIR, "qr_youtube_small.png")
 QR_BIG = os.path.join(PLUGIN_DIR, "qr_youtube_big.png")
@@ -153,6 +162,7 @@ cfg.epg_server = ConfigYesNo(True)
 cfg.show_pluginbrowser = ConfigYesNo(False)
 cfg.show_extensions = ConfigYesNo(False)
 cfg.show_mainmenu = ConfigYesNo(False)
+cfg.check_update = ConfigYesNo(True)
 cfg.picon_dir = ConfigSelection(default="auto", choices=[("auto", "auto")] + [(x, x) for x in PICON_DIRS])
 
 
@@ -1053,7 +1063,7 @@ def startEpgImportAll():
 	"""starts EPGImport with all its enabled sources (like "Manual import" in EPGImport) - main thread"""
 	try:
 		from Plugins.Extensions.EPGImport import plugin as epi
-		if not epi.ensure_runtime_modules() or epi.epgimport.isImportRunning():
+		if not getattr(epi, "ensure_runtime_modules", lambda: True)() or epi.epgimport.isImportRunning():
 			return False
 		epi.EPGConfig.channelCache = {}
 		conf = epi.EPGConfig.loadUserSettings()
@@ -1075,7 +1085,7 @@ def startEpgImportOfServer():
 		return False
 	try:
 		from Plugins.Extensions.EPGImport import plugin as epi
-		if not epi.ensure_runtime_modules() or epi.epgimport.isImportRunning():
+		if not getattr(epi, "ensure_runtime_modules", lambda: True)() or epi.epgimport.isImportRunning():
 			return False
 		epi.EPGConfig.channelCache = {}
 		sources = [x for x in epi.EPGConfig.enumSourcesFile(epgmap.SERVER_SOURCES)]
@@ -1205,6 +1215,9 @@ class RCSCMain(Screen):
 
 	# ---- start / loading
 	def start(self):
+		if cfg.check_update.value and isServerSet():
+			from twisted.internet import reactor
+			reactor.callLater(2, self.checkUpdate, False)
 		if not isServerSet():
 			self["status"].setText(_("Set the server IP first (yellow button)."))
 			# 2.0.1 fix (09.11.2026): open the settings only after this window is shown. Opened from onLayoutFinish,
@@ -1498,6 +1511,7 @@ class RCSCMain(Screen):
 		menu.append((_("Start EPGImport now (all sources)"), "epgimport"))
 		menu.append((_("Reload list from server"), "reload"))
 		menu.append((_("Server settings"), "settings"))
+		menu.append((_("Check for updates now"), "update_check"))
 		menu.append((_("About"), "about"))
 		self.session.openWithCallback(self.menuCallback, ChoiceBox, title=_("Options"), list=menu)
 
@@ -1531,8 +1545,77 @@ class RCSCMain(Screen):
 				self.loadRemote()
 		elif action == "settings":
 			self.keySettings()
+		elif action == "update_check":
+			self.checkUpdate(True)
 		elif action == "about":
 			self.session.open(RCSCAbout)
+
+	# ---- online update from GitHub (2.0.4 DreamOS / 2.1.1 open source)
+	def checkUpdate(self, manual=False):
+		if not self.alive():
+			return
+		if manual:
+			self["status"].setText(_("Checking for updates ..."))
+		threads.deferToThread(updater.checkLatest, GITHUB_REPO, VERSION, UPDATE_SUFFIX) \
+			.addCallback(self.updateChecked, manual).addErrback(self.updateCheckFailed, manual)
+
+	def updateCheckFailed(self, failure, manual):
+		print("[RCSC] update check failed: %s" % failure.getErrorMessage())
+		if manual and self.alive():
+			self["status"].setText(_("Could not check for updates (no internet connection?)."))
+
+	def updateChecked(self, info, manual):
+		if not self.alive():
+			return
+		if not info:
+			if manual:
+				self["status"].setText(_("You have the latest version (%s).") % VERSION)
+			return
+		self._updateInfo = info
+		self.offerUpdate()
+
+	def offerUpdate(self):
+		if not self.alive():
+			return
+		if self.working:	# never install while bouquets are loaded or converted - ask when it is finished
+			from twisted.internet import reactor
+			reactor.callLater(1, self.offerUpdate)
+			return
+		info = self._updateInfo
+		text = _("A new version %s is available (installed: %s).") % (info["version"], VERSION)
+		if info.get("notes"):
+			text += "\n\n" + info["notes"]
+		text += "\n\n" + _("Download and install it now?")
+		self.session.openWithCallback(self.updateAnswer, MessageBox, text, MessageBox.TYPE_YESNO, default=True)
+
+	def updateAnswer(self, answer):
+		if not answer or not self.alive():
+			return
+		self.working = True
+		self["status"].setText(_("Downloading and installing version %s ...") % self._updateInfo["version"])
+		threads.deferToThread(updater.downloadAndInstall, self._updateInfo, UPDATE_COMMAND) \
+			.addCallback(self.updateInstalled).addErrback(self.updateInstallFailed)
+
+	def updateInstallFailed(self, failure):
+		self.updateInstalled((False, failure.getErrorMessage()))
+
+	def updateInstalled(self, result):
+		ok, out = result
+		print("[RCSC] update %s: %s" % (ok and "installed" or "failed", out))
+		if not self.alive():
+			return
+		self.working = False
+		if not ok:
+			self["status"].setText(_("Update failed."))
+			self.session.open(MessageBox, _("The update could not be installed:") + "\n" + out, MessageBox.TYPE_ERROR)
+			return
+		self["status"].setText(_("Version %s installed - active after a GUI restart.") % self._updateInfo["version"])
+		self.session.openWithCallback(self.restartAnswer, MessageBox, _("Version %s is installed. Restart the GUI now?") % self._updateInfo["version"], MessageBox.TYPE_YESNO, default=True)
+
+	def restartAnswer(self, answer):
+		if answer and self.alive():
+			from Screens.Standby import TryQuitMainloop
+			self.session.open(TryQuitMainloop, 3)
 
 	# ---- delete
 	def askDelete(self, files):
@@ -1761,6 +1844,7 @@ class RCSCSetup(ConfigListScreen, Screen):
 		lst.append(getConfigListEntry(_("Show in plugin browser"), cfg.show_pluginbrowser, _("Entry in the plugin browser (after GUI restart). Always in: Menu > Setup > Services and Recordings > Service Searching.")))
 		lst.append(getConfigListEntry(_("Show in extensions menu (blue button)"), cfg.show_extensions, _("Quick start with the blue button in TV mode (after GUI restart).")))
 		lst.append(getConfigListEntry(_("Show in main menu"), cfg.show_mainmenu, _("Entry in the main menu (after GUI restart).")))
+		lst.append(getConfigListEntry(_("Check for updates when opening"), cfg.check_update, _("When the plugin is opened it asks GitHub (internet) for a new version. You decide with OK or EXIT - nothing is installed without asking.")))
 		lst.append(getConfigListEntry(_("Plugin language"), cfg.language, ""))
 		self.list = lst
 		self["config"].list = lst

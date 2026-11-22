@@ -18,12 +18,12 @@ with the IP address of your own server.
 
 ## 1. Install
 
-1. Copy `enigma2-plugins-remotechannelconverter-dreamos_2.0.2_all.deb` to `/tmp` of the Dreambox
+1. Copy `enigma2-plugins-remotechannelconverter-dreamos_2.0.4_all.deb` to `/tmp` of the Dreambox
    (FTP program, e.g. FileZilla: host = IP of the Dreambox, user `root`, port 21).
 2. Telnet / SSH to the Dreambox (e.g. PuTTY), log in as `root`:
    ```sh
    cd /tmp
-   dpkg -i enigma2-plugins-remotechannelconverter-dreamos_2.0.2_all.deb
+   dpkg -i enigma2-plugins-remotechannelconverter-dreamos_2.0.4_all.deb
    systemctl restart enigma2
    ```
    or **MENU → Setup → Software management → Install local extension** → `/tmp` → green, then restart the GUI.

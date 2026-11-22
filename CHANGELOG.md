@@ -3,6 +3,18 @@
 All changes since version 1.0 by **Mardo22 (SetTvBox4U)**. Licensed under GPL-3.0.
 YouTube channel: [SetTvBox4U](https://www.youtube.com/@SetTvBox4U)
 
+## 2.0.4 – 22.11.2026
+- **Online update:** when the plugin is opened it asks GitHub for the latest published version. If it is newer, a
+  message shows what is new – **OK** downloads and installs it and offers a GUI restart, **EXIT** keeps your version.
+  The download is checked (size and checksum) before it is installed. Nothing is installed without asking.
+  Option "Check for updates when opening" (default yes) and MENU "Check for updates now".
+- Fix: MENU "Start EPGImport now (all sources)" and the import of the EPG from the server did not start on images
+  whose EPGImport is a different version (for example TITANIUM 2026 AIO) – the log showed
+  `[RCSC] EPGImport start failed: 'module' object has no attribute 'ensure_runtime_modules'`.
+  Now the import starts the same way as "Manual import" in EPGImport, with every EPGImport version.
+- Settings and converted bouquets stay as they are – install 2.0.4 over 2.0.2.
+- Tested on Dreambox Two with TITANIUM 2026 AIO (22.11.2026): online update, EPGImport start.
+
 ## 2.0.2 – 09.11.2026
 - Short tip in the server panel ("one tuner on the server = channels of one transponder only (all in standby)") –
   the longer tip was cut off at the bottom of the panel.
