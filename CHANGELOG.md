@@ -3,6 +3,19 @@
 All changes since version 1.0 by **Mardo22 (SetTvBox4U)**. Licensed under GPL-3.0.
 YouTube channel: [SetTvBox4U](https://www.youtube.com/@SetTvBox4U)
 
+## 2.0.5 – 27.11.2026
+- **EPG from the server is imported about 1 minute later:** after "Update all converted bouquets" the plugin no longer
+  starts EPGImport at once. It waits about 1 minute and starts the import only when the receiver has finished saving
+  its EPG and no other EPGImport is running (otherwise it checks again every 30 s, max. 10 times). Before, EPGImport
+  could start while the receiver was still saving the EPG and reloading the bouquets – on a busy image this could
+  freeze the receiver. The timer runs in the main program, also when the plugin window is closed.
+- MENU "Update EPG from server" and "Start EPGImport now" also wait while the EPG is being saved.
+- No import of only the server EPG when EPGImport is set to "Clearing current EPG before import" – that import would
+  delete the whole EPG of the receiver and keep only the few events from the server. The plugin shows a message instead.
+- Settings and converted bouquets stay as they are. With 2.0.4 the plugin offers 2.0.5 by itself (online update).
+- Tested on Dreambox Two with TITANIUM 2026 AIO (27.11.2026): Update all of 8 bouquets (1481 channels), EPG from the
+  server 2736 events, EPG of the receiver kept, no freeze.
+
 ## 2.0.4 – 22.11.2026
 - **Online update:** when the plugin is opened it asks GitHub for the latest published version. If it is newer, a
   message shows what is new – **OK** downloads and installs it and offers a GUI restart, **EXIT** keeps your version.

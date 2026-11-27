@@ -26,7 +26,7 @@
 
 نظام DreamOS لا يحتوي على خاصية **Fallback tuner** الموجودة في OpenPLi و OE-Alliance – هذا البلجن هو الحل لنظام DreamOS.
 
-**الإصدار الحالي: 2.0.4** (22.11.2026) – حزمة واحدة لنظام DreamOS 4.5 و 5.0.
+**الإصدار الحالي: 2.0.5** (27.11.2026) – حزمة واحدة لنظام DreamOS 4.5 و 5.0.
 
 📺 قناة يوتيوب: **[SetTvBox4U – youtube.com/@SetTvBox4U](https://www.youtube.com/@SetTvBox4U)**<br>
 🎬 شرح الفيديو الكامل: **[https://youtu.be/CLJeFTDPoZw](https://youtu.be/CLJeFTDPoZw)**<br>
@@ -77,7 +77,7 @@
 - الدريم بوكس يشغّل فقط ما يستطيع السيرفر ضبطه: إذا كان في السيرفر تيونر واحد فقط، يشغّل الدريم بوكس قنوات الترددات التي عليها السيرفر فقط (أو كل القنوات عندما يكون السيرفر في وضع الاستعداد).
 
 ## التثبيت
-1. حمّل الملف `enigma2-plugins-remotechannelconverter-dreamos_2.0.4_all.deb` من [Releases](../../releases) (أو من مجلد `release/`).
+1. حمّل الملف `enigma2-plugins-remotechannelconverter-dreamos_2.0.5_all.deb` من [Releases](../../releases) (أو من مجلد `release/`).
 2. انسخه إلى المجلد `/tmp` في الدريم بوكس (برنامج FTP مثل FileZilla: العنوان = IP الدريم بوكس، المستخدم `root`، المنفذ 21):
 
    ![النسخ إلى /tmp](docs/images/17-copy-ftp-ar.jpg)
@@ -89,7 +89,7 @@
 
 ```sh
 cd /tmp
-dpkg -i enigma2-plugins-remotechannelconverter-dreamos_2.0.4_all.deb
+dpkg -i enigma2-plugins-remotechannelconverter-dreamos_2.0.5_all.deb
 systemctl restart enigma2
 ```
 
@@ -112,7 +112,7 @@ systemctl restart enigma2
 ## الشكر
 - البلجن الأصلي **Remote channel stream converter** لأجهزة Enigma2 – OpenPLi و E2OpenPlugins و OE-Alliance (رخصة GPL-3.0).
 - نسخة DreamOS الأولى 1.0 (2019) – **seagen** ([linuxsat-support.com](https://www.linuxsat-support.com/thread/139061-remote-stream-channel-converter/)) – وهي أساس تحديثنا.
-- الإصدارات 1.1 – 2.0.4 لنظام DreamOS 4.5 و 5.0 (واجهة جديدة، OpenWebif، IPTV، StreamRelay، اللوغو، دليل البرامج …):
+- الإصدارات 1.1 – 2.0.5 لنظام DreamOS 4.5 و 5.0 (واجهة جديدة، OpenWebif، IPTV، StreamRelay، اللوغو، دليل البرامج …):
   **Mardo22 ([SetTvBox4U](https://www.youtube.com/@SetTvBox4U))**، 2026 – انظر [CHANGELOG.md](CHANGELOG.md).
 
 ## الرخصة

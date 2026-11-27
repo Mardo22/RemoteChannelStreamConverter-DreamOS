@@ -18,7 +18,7 @@ with picons and EPG. The Vu+ needs the LNB cable – the Dreambox does not.
 
 DreamOS has no "Fallback tuner" function like OpenPLi / OE-Alliance images – this plugin is the DreamOS way to do it.
 
-**Current version: 2.0.4** (22.11.2026) – one package for DreamOS 4.5 and 5.0.
+**Current version: 2.0.5** (27.11.2026) – one package for DreamOS 4.5 and 5.0.
 
 📺 YouTube channel: **[SetTvBox4U – youtube.com/@SetTvBox4U](https://www.youtube.com/@SetTvBox4U)**
 🎬 Video guide "How to use" (Arabic, subtitles AR / EN / SK): **[https://youtu.be/CLJeFTDPoZw](https://youtu.be/CLJeFTDPoZw)** · short trailer: [https://youtu.be/_XV1O1YvzN4](https://youtu.be/_XV1O1YvzN4)
@@ -73,7 +73,7 @@ The Vu+ tunes the channel and sends the live picture over your home network. The
   only channels of the transponder the server is on (or all channels while the server is in standby).
 
 ## Installation
-1. Download `enigma2-plugins-remotechannelconverter-dreamos_2.0.4_all.deb` from [Releases](../../releases)
+1. Download `enigma2-plugins-remotechannelconverter-dreamos_2.0.5_all.deb` from [Releases](../../releases)
    (or from the `release/` folder).
 2. Copy it to `/tmp` of the Dreambox (FTP, e.g. FileZilla: host = IP of the Dreambox, user `root`, port 21):
 
@@ -81,7 +81,7 @@ The Vu+ tunes the channel and sends the live picture over your home network. The
 3. Install via telnet / SSH (e.g. PuTTY), log in as `root`:
    ```sh
    cd /tmp
-   dpkg -i enigma2-plugins-remotechannelconverter-dreamos_2.0.4_all.deb
+   dpkg -i enigma2-plugins-remotechannelconverter-dreamos_2.0.5_all.deb
    systemctl restart enigma2
    ```
    or **MENU → Setup → Software management → Install local extension** → `/tmp` → **green**, then restart the GUI.
@@ -109,7 +109,7 @@ The converted bouquets are named `… (remote of <server IP>)` and appear in the
   ([e2openplugin-RemoteChannelStreamConverter](https://github.com/E2OpenPlugins/e2openplugin-RemoteChannelStreamConverter)),
   OE-Alliance ([RemoteChannelStreamConverter](https://github.com/oe-alliance-plugins/RemoteChannelStreamConverter), GPL-3.0).
 - First DreamOS port 1.0 (2019) – **seagen** ([linuxsat-support.com](https://www.linuxsat-support.com/thread/139061-remote-stream-channel-converter/)) – the base of this update.
-- Versions 1.1 – 2.0.4 for DreamOS 4.5 / 5.0 (new user interface, OpenWebif, IPTV, StreamRelay, picons, EPG, …):
+- Versions 1.1 – 2.0.5 for DreamOS 4.5 / 5.0 (new user interface, OpenWebif, IPTV, StreamRelay, picons, EPG, …):
   **Mardo22 ([SetTvBox4U](https://www.youtube.com/@SetTvBox4U))**, 2026 – see [CHANGELOG.md](CHANGELOG.md).
 
 ## License
@@ -123,7 +123,7 @@ no IPTV links and no keys. Use it only with services you are entitled to receive
 ---
 
 ### Slovensky (krátko)
-Plugin pre **DreamOS 4.5 a 5.0** (verzia **2.0.4**), ktorý z buketov druhého prijímača (servera, napr. Vu+ s káblom z LNB)
+Plugin pre **DreamOS 4.5 a 5.0** (verzia **2.0.5**), ktorý z buketov druhého prijímača (servera, napr. Vu+ s káblom z LNB)
 vytvorí na Dreamboxe stream bukety – Dreambox potom používa tunery servera a kábel nepotrebuje (náhrada funkcie „Fallback“,
 ktorá v DreamOS nie je), s piconmi a EPG.
 **Celý návod po slovensky v PDF: [RCSC-2.0.2_Navod_SK.pdf](docs/RCSC-2.0.2_Navod_SK.pdf)**.
